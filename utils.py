@@ -3,6 +3,7 @@ import chatterbot
 import spacy
 import random
 import wikipedia
+import sqlite3
 from chatterbot import ChatBot
 from chatterbot.conversation import Statement
 from chatterbot.trainers import ChatterBotCorpusTrainer
@@ -11,6 +12,7 @@ from chatterbot.response_selection import get_random_response
 from gtts import gTTS
 from io import BytesIO
 from pytube import YouTube
+from pathlib import Path
 
 EXCEPTION_WIKIPEDIA = 'Non ho trovato risultati per: '
 
@@ -48,11 +50,16 @@ def clean_input(testo: str):
     return True
 
 def get_chatterbot(outfile: str, train: bool):
+  fle = Path('./config/db.sqlite3')
+  fle.touch(exist_ok=True)
+  f = open(fle)
+  f.close()
+
   nlp = spacy.load("it_core_news_lg")
   chatbot = ChatBot(
       'PezzenteCapo',
       storage_adapter='chatterbot.storage.SQLStorageAdapter',
-      database_uri='sqlite:///db.sqlite3',
+      database_uri='sqlite:///config/db.sqlite3',
       logic_adapters=[
           'chatterbot.logic.BestMatch'
       ],
@@ -63,7 +70,17 @@ def get_chatterbot(outfile: str, train: bool):
     trainer = ChatterBotCorpusTrainer(chatbot)
     trainer.train("chatterbot.corpus.italian")
   if outfile is not None:
-    trainer.export_for_training(outfile)
+    trainer.export_for_training(outfile)  
+
+  with sqlite3.connect("./config/db.sqlite3") as db:
+    cursor = db.cursor()
+    cursor.execute('''SELECT COUNT(*) from STATEMENT ''')
+    result=cursor.fetchall()
+    if result == 0 :
+      print("The db file is empty, learning ciao - ciao")
+      utils.learn('ciao', 'ciao', chatbot)
+    else :
+      print("The db file is not empty")
   return chatbot
 
 

@@ -8,7 +8,7 @@ logging.basicConfig(level=logging.ERROR)
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
-chatbot = utils.get_chatterbot(None, True)
+chatbot = utils.get_chatterbot(None, False)
 
 app = Flask(__name__)
 api = Api(app)
@@ -71,7 +71,7 @@ nsmusic = api.namespace('chatbot_music', 'Accumulators Chatbot Music APIs')
 parser = reqparse.RequestParser()
 parser.add_argument("url", type=str)
 
-@nsmusic.route('/youtube/get/')
+@nsmusic.route('/youtube/get')
 class YoutubeGetClass(Resource):
   @api.expect(parser)
   def get(self):

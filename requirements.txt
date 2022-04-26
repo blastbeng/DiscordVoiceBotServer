@@ -12,4 +12,5 @@ MarkupSafe
 uWSGI
 wikipedia
 gtts
-pytube
+git+https://github.com/kinshuk-h/pytube
+pysqlite3
