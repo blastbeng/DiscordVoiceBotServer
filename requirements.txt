@@ -1,0 +1,15 @@
+python-dotenv
+flask
+flask-restx
+click<8.1.0
+git+https://github.com/blastbeng/ChatterBot
+git+https://github.com/gunthercox/chatterbot-corpus
+spacy
+pyyaml
+itsdangerous
+Jinja2
+MarkupSafe
+uWSGI
+wikipedia
+gtts
+pytube
