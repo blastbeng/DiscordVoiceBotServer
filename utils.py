@@ -4,6 +4,7 @@ import spacy
 import random
 import wikipedia
 import sqlite3
+import json
 from chatterbot import ChatBot
 from chatterbot.conversation import Statement
 from chatterbot.trainers import ChatterBotCorpusTrainer
@@ -12,12 +13,19 @@ from chatterbot.response_selection import get_random_response
 from gtts import gTTS
 from io import BytesIO
 from pytube import YouTube
+from pytube import Search
 from pathlib import Path
 
 EXCEPTION_WIKIPEDIA = 'Non ho trovato risultati per: '
+EXCEPTION_YOUTUBE = 'Non ho trovato risultati per: '
 
 
 wikipedia.set_lang("it")
+
+class YoutubeVideo():          # leave this empty
+    def __init__(self):   # constructor function using self
+        self.title = None  # variable using self.
+        self.link = None
 
 def wiki_summary(testo: str):
   try:
@@ -91,9 +99,41 @@ def learn(testo: str, risposta: str, chatbot: ChatBot):
   return "I've learned: " + testo + " => " + risposta
 
 def get_youtube_audio(link: str):
-  yt = YouTube(link)
-  video = yt.streams.filter(only_audio=True).first()
-  fp = BytesIO()
-  video.stream_to_buffer(fp)
-  fp.seek(0)
-  return fp
+  try:
+    yt = YouTube(link)
+    video = yt.streams.filter(only_audio=True).first()
+    fp = BytesIO()
+    video.stream_to_buffer(fp)
+    fp.seek(0)
+    return fp    
+  except:
+    return get_tts(EXCEPTION_YOUTUBE)
+
+def search_youtube_audio(text: str, onevideo: bool):
+  try:
+    s = Search(text)
+    if not s.results or len(s.results) == 0:
+      youtubeVideo = []
+      return videos
+    else:
+      if onevideo:
+        videos = []
+        size = len(s.results)-1
+        n = random.randint(0,size)
+        video = s.results[n]
+        youtubeVideo = YoutubeVideo()
+        youtubeVideo.title=video.title
+        youtubeVideo.link=video.watch_url
+        videos.append(youtubeVideo.__dict__)
+        return videos
+      else:
+        videos = []
+        for video in s.results:
+          youtubeVideo = YoutubeVideo()
+          youtubeVideo.title=video.title
+          youtubeVideo.link=video.watch_url
+          videos.append(youtubeVideo.__dict__)
+        return videos
+  except:
+    youtubeVideo = []
+    return videos

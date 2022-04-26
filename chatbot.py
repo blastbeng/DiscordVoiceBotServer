@@ -1,5 +1,6 @@
 import logging
 import utils
+import json
 from flask import Flask, request, send_file
 from flask_restx import Api, Resource, reqparse
 from chatterbot.conversation import Statement
@@ -68,15 +69,27 @@ class AudioSearchClass(Resource):
 
 nsmusic = api.namespace('chatbot_music', 'Accumulators Chatbot Music APIs')
 
-parser = reqparse.RequestParser()
-parser.add_argument("url", type=str)
+parserurl = reqparse.RequestParser()
+parserurl.add_argument("url", type=str)
 
 @nsmusic.route('/youtube/get')
 class YoutubeGetClass(Resource):
-  @api.expect(parser)
+  @api.expect(parserurl)
   def get(self):
     url = request.args.get("url")
     return send_file(utils.get_youtube_audio(url), attachment_filename='audio.mp3', mimetype='audio/mp3')
+
+parsersearch = reqparse.RequestParser()
+parsersearch.add_argument("text", type=str)
+parsersearch.add_argument("onevideo", type=str)
+
+@nsmusic.route('/youtube/search')
+class YoutubeGetClass(Resource):
+  @api.expect(parsersearch)
+  def get(self):
+    text = request.args.get("text")
+    onevideo = request.args.get("onevideo")
+    return utils.search_youtube_audio(text, bool(onevideo))
 
 if __name__ == '__main__':
   app.run()
