@@ -12,5 +12,8 @@ words = [ "Brutto", "Schifoso",  "Ignobile",  "Mi fai schifo",  "Baciami il culo
 "testa di figa", "leccafighe" ]
 
 def get_insults():
-    sentence = words[random.randint(0,len(words)-1)] + (" ") + words[random.randint(0,len(words)-1)] + (" ") + words[random.randint(0,len(words)-1)]
-    return sentence
+    try:
+        sentence = words[random.randint(0,len(words)-1)] + (" ") + words[random.randint(0,len(words)-1)] + (" ") + words[random.randint(0,len(words)-1)]
+        return sentence
+    except:
+        return "stronzo mi sono spaccato male, blast deve sistemarmi"

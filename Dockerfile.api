@@ -45,6 +45,7 @@ USER root
 WORKDIR /app
 
 COPY utils.py .
+COPY insults.py .
 COPY chatbot.py .
 COPY uwsgi.ini .
 COPY entrypoint.sh .
