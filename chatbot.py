@@ -1,5 +1,6 @@
 import logging
 import utils
+import insults
 import json
 from flask import Flask, request, send_file
 from flask_restx import Api, Resource, reqparse
@@ -67,6 +68,20 @@ class AudioSearchClass(Resource):
     return send_file(utils.get_tts(utils.wiki_summary(text)), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
 
+parserinsult = reqparse.RequestParser()
+parserinsult.add_argument("text", type=str)
+
+@nsaudio.route('/insult')
+class AudioInsultClass(Resource):
+  @api.expect(parserinsult)
+  def get (self):
+    sentence = insults.get_insults()
+    text = request.args.get("text")
+    if text and text != '':
+      sentence = text + " " + sentence
+    return send_file(utils.get_tts(sentence), attachment_filename='audio.wav', mimetype='audio/x-wav')
+
+
 nsmusic = api.namespace('chatbot_music', 'Accumulators Chatbot Music APIs')
 
 parserurl = reqparse.RequestParser()
@@ -80,7 +95,7 @@ class YoutubeGetClass(Resource):
     return send_file(utils.get_youtube_audio(url), attachment_filename='audio.mp3', mimetype='audio/mp3')
 
 @nsmusic.route('/youtube/info')
-class YoutubeGetClass(Resource):
+class YoutubeInfoClass(Resource):
   @api.expect(parserurl)
   def get(self):
     url = request.args.get("url")
@@ -91,7 +106,7 @@ parsersearch.add_argument("text", type=str)
 parsersearch.add_argument("onevideo", type=str)
 
 @nsmusic.route('/youtube/search')
-class YoutubeGetClass(Resource):
+class YoutubeSearchClass(Resource):
   @api.expect(parsersearch)
   def get(self):
     text = request.args.get("text")
