@@ -79,6 +79,13 @@ class YoutubeGetClass(Resource):
     url = request.args.get("url")
     return send_file(utils.get_youtube_audio(url), attachment_filename='audio.mp3', mimetype='audio/mp3')
 
+@nsmusic.route('/youtube/info')
+class YoutubeGetClass(Resource):
+  @api.expect(parserurl)
+  def get(self):
+    url = request.args.get("url")
+    return utils.get_youtube_info(url)
+
 parsersearch = reqparse.RequestParser()
 parsersearch.add_argument("text", type=str)
 parsersearch.add_argument("onevideo", type=str)

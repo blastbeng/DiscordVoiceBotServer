@@ -17,7 +17,7 @@ from pytube import Search
 from pathlib import Path
 
 EXCEPTION_WIKIPEDIA = 'Non ho trovato risultati per: '
-EXCEPTION_YOUTUBE = 'Non ho trovato risultati per: '
+EXCEPTION_YOUTUBE_AUDIO = 'Errore nella riproduzione da Youtube.'
 
 
 wikipedia.set_lang("it")
@@ -96,7 +96,7 @@ def learn(testo: str, risposta: str, chatbot: ChatBot):
   input_statement = Statement(text=testo)
   correct_response = Statement(text=risposta)
   chatbot.learn_response(correct_response, input_statement)
-  return "I've learned: " + testo + " => " + risposta
+  return "Ho imparato: " + testo + " => " + risposta
 
 def get_youtube_audio(link: str):
   try:
@@ -107,13 +107,13 @@ def get_youtube_audio(link: str):
     fp.seek(0)
     return fp    
   except:
-    return get_tts(EXCEPTION_YOUTUBE)
+    return get_tts(EXCEPTION_YOUTUBE_AUDIO)
 
 def search_youtube_audio(text: str, onevideo: bool):
   try:
     s = Search(text)
     if not s.results or len(s.results) == 0:
-      youtubeVideo = []
+      videos = []
       return videos
     else:
       if onevideo:
@@ -135,5 +135,18 @@ def search_youtube_audio(text: str, onevideo: bool):
           videos.append(youtubeVideo.__dict__)
         return videos
   except:
-    youtubeVideo = []
-    return videos
+    videos = []
+    return videos  
+
+def get_youtube_info(link: str):
+  try:
+    videos = []
+    video = YouTube(link)
+    youtubeVideo = YoutubeVideo()
+    youtubeVideo.title=video.title
+    youtubeVideo.link=video.watch_url
+    videos.append(youtubeVideo.__dict__)
+    return videos    
+  except:
+    videos = []
+    return videos  
