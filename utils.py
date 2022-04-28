@@ -30,7 +30,7 @@ class YoutubeVideo():          # leave this empty
 def wiki_summary(testo: str):
   try:
     definition = wikipedia.summary(testo, sentences=1, auto_suggest=True, redirect=True)
-    return definition
+    return testo + ": " + definition
   except:
     return EXCEPTION_WIKIPEDIA + testo
 
