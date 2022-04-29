@@ -5,6 +5,7 @@ import random
 import wikipedia
 import sqlite3
 import json
+import insults
 from chatterbot import ChatBot
 from chatterbot.conversation import Statement
 from chatterbot.trainers import ChatterBotCorpusTrainer
@@ -22,9 +23,9 @@ EXCEPTION_YOUTUBE_AUDIO = 'Errore nella riproduzione da Youtube.'
 
 wikipedia.set_lang("it")
 
-class YoutubeVideo():          # leave this empty
-    def __init__(self):   # constructor function using self
-        self.title = None  # variable using self.
+class YoutubeVideo():
+    def __init__(self):
+        self.title = None
         self.link = None
 
 def wiki_summary(testo: str):
@@ -150,3 +151,63 @@ def get_youtube_info(link: str):
   except:
     videos = []
     return videos  
+
+
+
+class TournamentUsers():
+  def __init__(self, id, username, image, title):
+      self.id = id
+      self.username = username
+      self.image = image
+      self.title = title
+
+class TournamentTeams():
+  def __init__(self, name, users):
+      self.name = name
+      self.users = users
+
+class TournamentRounds():
+  def __init__(self, round, teams):
+      self.round = round
+      self.teams = teams
+
+class TournamentInfo():
+  def __init__(self, author, author_image, guild_image, name, description, image, rounds):
+      self.author       = author
+      self.author_image = author_image
+      self.guild_image  = guild_image
+      self.name         = name
+      self.description  = description
+      self.image        = image
+      self.rounds       = rounds
+
+def generate_tournament(content):
+
+  user_titles = insults.names_single_base
+  team_names = insults.names_plural
+
+  tournamentUsersArray = []
+  for user in content['users']:
+    user_title = random.choice(user_titles)
+    user_titles.remove(user_title)
+    tournamentUser = TournamentUsers(user['id'], user['username'], user['image'], user_title)
+    tournamentUsersArray.append(tournamentUser.__dict__)
+
+  tournamentTeamsArray = []
+  team_name = random.choice(team_names)
+  team_names.remove(team_name)
+  tournamentTeam = TournamentTeams(team_name, tournamentUsersArray)
+  tournamentTeamsArray.append(tournamentTeam.__dict__)
+
+  tournamentRoundsArray = []
+  tournamentRounds = TournamentRounds("round 1", tournamentTeamsArray)
+  tournamentRoundsArray.append(tournamentRounds.__dict__)
+
+  tournament = TournamentInfo(content['author'],
+                          content['author_image'],
+                          content['guild_image'],
+                          content['name'],
+                          content['description'],
+                          content['image'],
+                          tournamentRoundsArray.__dict__)
+  return tournament.__dict__

@@ -2,7 +2,7 @@ import logging
 import utils
 import insults
 import json
-from flask import Flask, request, send_file, Response
+from flask import Flask, request, send_file, Response, jsonify
 from flask_restx import Api, Resource, reqparse
 from chatterbot.conversation import Statement
 logging.basicConfig(level=logging.ERROR)
@@ -26,7 +26,7 @@ def get_response_str(text: str):
     return r
 
 def get_response_json(text: str):
-    r = Response(response=text, status=200, mimetype="text/css")
+    r = Response(response=text, status=200, mimetype="application/json")
     r.headers["Content-Type"] = "application/json; charset=utf-8"
     return r
 
@@ -65,7 +65,12 @@ class TextInsultClass(Resource):
     text = request.args.get("text")
     if text and text != '' and text != 'none':
       sentence = text + " " + sentence
-    return get_response_str(sentence)
+    return sentence
+
+@nstext.route('/tournament')
+class TextTournamentClass(Resource): 
+  def post (self):
+    return jsonify(utils.generate_tournament(request.get_json()));
 
 
 nsaudio = api.namespace('chatbot_audio', 'Accumulators Chatbot TTS audio APIs')
@@ -113,14 +118,15 @@ class YoutubeGetClass(Resource):
   @api.expect(parserurl)
   def get(self):
     url = request.args.get("url")
-    return send_file(utils.get_youtube_audio(url), attachment_filename='audio.mp3', mimetype='audio/mp3')
+    audio = utils.get_youtube_audio(url)
+    return send_file(audio, attachment_filename='audio.mp3', mimetype='audio/mp3')
 
 @nsmusic.route('/youtube/info')
 class YoutubeInfoClass(Resource):
   @api.expect(parserurl)
   def get(self):
     url = request.args.get("url")
-    return get_response_str(utils.get_youtube_info(url))
+    return utils.get_youtube_info(url)
 
 parsersearch = reqparse.RequestParser()
 parsersearch.add_argument("text", type=str)
