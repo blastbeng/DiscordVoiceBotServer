@@ -262,7 +262,7 @@ def regen_tournament(author: str, name: str, description: str):
     sqliteConnection = sqlite3.connect('/tmp/DiscordVoiceBot/tournaments.sqlite3')
     cursor = sqliteConnection.cursor()
 
-    sqlite_select_query = """SELECT * from Tournaments WHERE author = ? AND name = ? AND description = ? ORDER BY ID DESC LIMIT 1"""
+    sqlite_select_query = """SELECT * from Tournaments WHERE author = ? AND name = ? AND description = ? ORDER BY ID DESC"""
     cursor.execute(sqlite_select_query, (author, name, description))
     records = cursor.fetchall()
 
@@ -277,6 +277,10 @@ def regen_tournament(author: str, name: str, description: str):
       name =         row[5]
       description =  row[6]
       image =        row[7]
+
+      if idtournament != 0:
+        break
+
     cursor.close()
 
 
@@ -294,12 +298,12 @@ def regen_tournament(author: str, name: str, description: str):
       for row in records:
         userid =         row[1]
         username =       row[2]
-        image =          row[3]
+        image_user =     row[3]
 
         user_data_set = {
           "id":       userid, 
           "username":     username, 
-          "image":        image
+          "image":        image_user
         }
         json_user_list.append(user_data_set)
 
