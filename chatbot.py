@@ -1,6 +1,7 @@
 import logging
 import utils
 import insults
+import tournament
 import json
 from flask import Flask, request, send_file, Response, jsonify
 from flask_restx import Api, Resource, reqparse
@@ -11,6 +12,7 @@ log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
 chatbot = utils.get_chatterbot(None, False)
+tournament.create_empty_tables()
 
 app = Flask(__name__)
 api = Api(app)
@@ -70,7 +72,13 @@ class TextInsultClass(Resource):
 @nstext.route('/tournament')
 class TextTournamentClass(Resource): 
   def post (self):
-    return jsonify(utils.generate_tournament(request.get_json()));
+    return jsonify(tournament.generate_tournament(request.get_json()));
+
+@nstext.route('/tournament/regen')
+class TextTournamentRegebClass(Resource): 
+  def post (self):
+    content = request.get_json()
+    return jsonify(tournament.regen_tournament(content['author'], content['name'], content['description']));
 
 
 nsaudio = api.namespace('chatbot_audio', 'Accumulators Chatbot TTS audio APIs')
