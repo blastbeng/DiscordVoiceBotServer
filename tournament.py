@@ -26,7 +26,7 @@ class TournamentInfo():
       self.author       = author
       self.author_image = author_image
       self.guild_image  = guild_image
-      self.teamsize         = teamsize
+      self.teamsize     = teamsize
       self.name         = name
       self.description  = description
       self.image        = image
