@@ -1,15 +1,21 @@
+import os
 import requests
 import sqlite3
 from pathlib import Path
+from os.path import join, dirname
+from dotenv import load_dotenv
 
-api="https://opentdb.com/api.php"
+dotenv_path = join(dirname(__file__), '.env')
+load_dotenv(dotenv_path)
+TMP_DIR = os.environ.get("SECRET_KEY")
+TRIVIA_API = os.environ.get("TRIVIA_API")
 
 def get_quiz(author, amount, category, difficulty, typeq):
   try:
     if amount and amount is not None and amount != "" and int(amount) <= 10:
-      url = api + "?amount=" + amount
+      url = TRIVIA_API + "?amount=" + amount
     elif not amount or amount is None or amount == "":
-      url = api + "?amount=5"
+      url = TRIVIA_API + "?amount=5"
     else:
       return "Error"
     if category and category is not None and category != "":
@@ -29,7 +35,7 @@ def insert_new_quiz(content):
 
 
 def check_temp_trivia_exists(): 
-  fle = Path('/tmp/DiscordVoiceBot/trivia.sqlite3')
+  fle = Path(TMP_DIR+'trivia.sqlite3')
   fle.touch(exist_ok=True)
   f = open(fle)
   f.close()
@@ -37,7 +43,7 @@ def check_temp_trivia_exists():
 def create_empty_tables():
   check_temp_trivia_exists()
   try:
-    sqliteConnection = sqlite3.connect('/tmp/DiscordVoiceBot/tournaments.sqlite3')
+    sqliteConnection = sqlite3.connect(TMP_DIR+'tournaments.sqlite3')
     cursor = sqliteConnection.cursor()
 
     sqlite_create_quiz_query = """ CREATE TABLE IF NOT EXISTS Quiz(
@@ -93,7 +99,7 @@ def create_empty_tables():
 
 def save_temp_quiz(author, content):  
   try:
-    sqliteConnection = sqlite3.connect('/tmp/DiscordVoiceBot/tournaments.sqlite3')
+    sqliteConnection = sqlite3.connect(TMP_DIR+'tournaments.sqlite3')
     cursor = sqliteConnection.cursor()
 
     sqlite_insert_quiz_query = """INSERT INTO Quiz

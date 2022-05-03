@@ -1,8 +1,16 @@
 import random
 import sqlite3
+import os
 from decimal import Decimal
 from itertools import combinations
 from pathlib import Path
+from os.path import join, dirname
+from dotenv import load_dotenv
+
+dotenv_path = join(dirname(__file__), '.env')
+load_dotenv(dotenv_path)
+TMP_DIR = os.environ.get("SECRET_KEY")
+
 class TournamentUsers():
   def __init__(self, id, username, image, title):
       self.id = id
@@ -171,7 +179,7 @@ def populate_users(users_input, team_size: int, user_size: int):
   return tournamentUsersArray
 
 def check_temp_tournament_exists(): 
-  fle = Path('/tmp/DiscordVoiceBot/tournaments.sqlite3')
+  fle = Path(TMP_DIR+'tournaments.sqlite3')
   fle.touch(exist_ok=True)
   f = open(fle)
   f.close()
@@ -179,7 +187,7 @@ def check_temp_tournament_exists():
 def create_empty_tables():
   check_temp_tournament_exists()
   try:
-    sqliteConnection = sqlite3.connect('/tmp/DiscordVoiceBot/tournaments.sqlite3')
+    sqliteConnection = sqlite3.connect(TMP_DIR+'tournaments.sqlite3')
     cursor = sqliteConnection.cursor()
 
     sqlite_create_tournaments_query = """ CREATE TABLE IF NOT EXISTS Tournaments(
@@ -217,7 +225,7 @@ def create_empty_tables():
 
 def save_temp_tournament(content):  
   try:
-    sqliteConnection = sqlite3.connect('/tmp/DiscordVoiceBot/tournaments.sqlite3')
+    sqliteConnection = sqlite3.connect(TMP_DIR+'tournaments.sqlite3')
     cursor = sqliteConnection.cursor()
 
     sqlite_insert_tournaments_query = """INSERT INTO Tournaments
@@ -258,7 +266,7 @@ def save_temp_tournament(content):
 def regen_tournament(author: str, name: str, description: str):
   tournament_data_set = None
   try:
-    sqliteConnection = sqlite3.connect('/tmp/DiscordVoiceBot/tournaments.sqlite3')
+    sqliteConnection = sqlite3.connect(TMP_DIR+'tournaments.sqlite3')
     cursor = sqliteConnection.cursor()
 
     sqlite_select_query = """SELECT * from Tournaments WHERE author = ? AND name = ? AND description = ? ORDER BY ID DESC"""
