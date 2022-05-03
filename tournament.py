@@ -9,7 +9,7 @@ from dotenv import load_dotenv
 
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
-TMP_DIR = os.environ.get("SECRET_KEY")
+TMP_DIR = os.environ.get("TMP_DIR")
 
 class TournamentUsers():
   def __init__(self, id, username, image, title):
@@ -314,7 +314,7 @@ def regen_tournament(author: str, name: str, description: str):
         }
         json_user_list.append(user_data_set)
 
-      cursor.close()
+      cursor_users.close()
 
 
       tournament_data_set = {

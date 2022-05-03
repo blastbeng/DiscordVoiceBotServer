@@ -44,6 +44,7 @@ RUN spacy download it_core_news_lg
 USER root
 WORKDIR /app
 
+COPY .env .
 COPY utils.py .
 COPY insults.py .
 COPY tournament.py .
