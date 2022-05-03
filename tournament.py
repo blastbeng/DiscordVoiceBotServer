@@ -1,6 +1,5 @@
 import random
 import sqlite3
-import json
 from decimal import Decimal
 from itertools import combinations
 from pathlib import Path
@@ -234,7 +233,7 @@ def save_temp_tournament(content):
                               content['description'],
                               content['image'])
 
-    count = cursor.execute(sqlite_insert_tournaments_query, data_tournaments_tuple)
+    cursor.execute(sqlite_insert_tournaments_query, data_tournaments_tuple)
 
     tournament_id = cursor.lastrowid
 
@@ -244,7 +243,7 @@ def save_temp_tournament(content):
                             VALUES 
                             (?, ?, ?, ?)"""
       data_users_tuple = (user['id'], user['username'], user['image'], tournament_id)
-      count = cursor.execute(sqlite_insert_users_query, data_users_tuple)
+      cursor.execute(sqlite_insert_users_query, data_users_tuple)
 
 
     sqliteConnection.commit()
