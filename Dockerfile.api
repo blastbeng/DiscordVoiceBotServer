@@ -30,8 +30,8 @@ ENV LANG it_IT.UTF-8
 ENV LANGUAGE it_IT:it  
 ENV LC_ALL it_IT.UTF-8
 
-RUN useradd -ms /bin/bash uwsgi
-USER uwsgi
+#RUN useradd -ms /bin/bash uwsgi
+#USER uwsgi
 
 ENV PATH="/home/uwsgi/.local/bin:${PATH}"
 
@@ -41,7 +41,7 @@ RUN pip3 install wheel
 RUN pip3 install -r requirements.txt
 RUN spacy download it_core_news_lg
 
-USER root
+#USER root
 WORKDIR /app
 
 COPY .env .
@@ -53,10 +53,10 @@ COPY chatbot.py .
 COPY uwsgi.ini .
 COPY entrypoint.sh .
 RUN chmod +x entrypoint.sh
-RUN chown -R uwsgi:uwsgi /app
+#RUN chown -R uwsgi:uwsgi /app
 
-USER uwsgi
-WORKDIR /app
+#USER uwsgi
+#WORKDIR /app
 
 CMD ["./entrypoint.sh"]
 #CMD . .venv/bin/activate && exec flask run chatbot.py --host=0.0.0.0
