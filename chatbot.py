@@ -22,7 +22,7 @@ parserinsult = reqparse.RequestParser()
 parserinsult.add_argument("text", type=str)
 
 def get_response_str(text: str):
-    r = Response(response=text, status=200, mimetype="text/css")
+    r = Response(response=text, status=200, mimetype="text/xml")
     r.headers["Content-Type"] = "text/xml; charset=utf-8"
     return r
 

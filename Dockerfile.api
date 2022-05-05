@@ -48,7 +48,6 @@ COPY .env .
 COPY utils.py .
 COPY insults.py .
 COPY tournament.py .
-COPY trivia.py .
 COPY chatbot.py .
 COPY uwsgi.ini .
 COPY entrypoint.sh .

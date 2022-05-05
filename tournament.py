@@ -292,6 +292,8 @@ def regen_tournament(author: str, name: str, description: str):
 
 
     if idtournament == 0:
+      if sqliteConnection:
+        sqliteConnection.close()
       return "Error"
     else:
       cursor_users = sqliteConnection.cursor()
