@@ -1,3 +1,4 @@
+import os
 import logging
 import utils
 import insults
@@ -5,6 +6,13 @@ import tournament
 from flask import Flask, request, send_file, Response, jsonify
 from flask_restx import Api, Resource, reqparse
 from chatterbot.conversation import Statement
+from flask_caching import Cache
+from os.path import join, dirname
+from dotenv import load_dotenv
+
+dotenv_path = join(dirname(__file__), '.env')
+load_dotenv(dotenv_path)
+
 logging.basicConfig(level=logging.ERROR)
 
 log = logging.getLogger('werkzeug')
@@ -14,6 +22,17 @@ chatbot = utils.get_chatterbot(None, False)
 tournament.create_empty_tables()
 
 app = Flask(__name__)
+config = {    
+    "CACHE_TYPE" : os.environ['CACHE_TYPE'],
+    "CACHE_REDIS_HOST" : os.environ['CACHE_REDIS_HOST'],
+    "CACHE_REDIS_PORT" : os.environ['CACHE_REDIS_PORT'],
+    "CACHE_REDIS_DB" : os.environ['CACHE_REDIS_DB'],
+    "CACHE_REDIS_URL" : os.environ['CACHE_REDIS_URL'],
+    "CACHE_DEFAULT_TIMEOUT" : os.environ['CACHE_DEFAULT_TIMEOUT']
+}
+
+app.config.from_mapping(config)
+cache = Cache(app)
 api = Api(app)
 
 nstext = api.namespace('chatbot_text', 'Accumulators Chatbot Text APIs')
@@ -33,33 +52,39 @@ def get_response_json(text: str):
 
 @nstext.route('/repeat/<string:text>')
 class TextRepeatClass(Resource):
+  @cache.cached(timeout=3000, query_string=True)
   def get (self, text: str):
     return text
 
 @nstext.route('/repeat/learn/<string:text>')
 class TextRepeatLearnClass(Resource):
+  @cache.cached(timeout=3000, query_string=True)
   def get (self, text: str):
     chatbot.get_response(text)
     return get_response_str(text)
 
 @nstext.route('/ask/<string:text>')
 class TextAskClass(Resource):
+  @cache.cached(timeout=1, query_string=True)
   def get (self, text: str):
     return get_response_str(chatbot.get_response(text).text)
 
 @nstext.route('/search/<string:text>')
 class TextSearchClass(Resource):
+  @cache.cached(timeout=3000, query_string=True)
   def get (self, text: str):
     return get_response_str(utils.wiki_summary(text))
 
 @nstext.route('/learn/<string:text>/<string:response>')
 class TextLearnClass(Resource):
+  @cache.cached(timeout=10, query_string=True)
   def get (self, text: str, response: str):
     return get_response_str(utils.learn(text, response, chatbot))
 
 @nstext.route('/insult')
 class TextInsultClass(Resource):
   @api.expect(parserinsult)
+  @cache.cached(timeout=1, query_string=True)
   def get (self):
     sentence = insults.get_insults()
     chatbot.get_response(sentence)
@@ -67,6 +92,7 @@ class TextInsultClass(Resource):
     if text and text != '' and text != 'none':
       sentence = text + " " + sentence
     return sentence
+
 
 @nstext.route('/tournament')
 class TextTournamentClass(Resource): 
@@ -84,28 +110,33 @@ nsaudio = api.namespace('chatbot_audio', 'Accumulators Chatbot TTS audio APIs')
 
 @nsaudio.route('/repeat/<string:text>')
 class AudioRepeatClass(Resource):
+  @cache.cached(timeout=3000, query_string=True)
   def get (self, text: str):
     return send_file(utils.get_tts(text), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
 @nsaudio.route('/repeat/learn/<string:text>')
 class AudioRepeatLearnClass(Resource):
+  @cache.cached(timeout=3000, query_string=True)
   def get (self, text: str):
     chatbot.get_response(text)
     return send_file(utils.get_tts(text), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
 @nsaudio.route('/ask/<string:text>')
 class AudioAskClass(Resource):
+  @cache.cached(timeout=1, query_string=True)
   def get (self, text: str):
     return send_file(utils.get_tts(chatbot.get_response(text).text), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
 @nsaudio.route('/search/<string:text>')
 class AudioSearchClass(Resource):
+  @cache.cached(timeout=10, query_string=True)
   def get (self, text: str):
     return send_file(utils.get_tts(utils.wiki_summary(text)), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
 @nsaudio.route('/insult')
 class AudioInsultClass(Resource):
   @api.expect(parserinsult)
+  @cache.cached(timeout=10, query_string=True)
   def get (self):
     sentence = insults.get_insults()
     chatbot.get_response(sentence)
@@ -148,4 +179,5 @@ class YoutubeSearchClass(Resource):
     return utils.search_youtube_audio(text, bool(onevideo))
 
 if __name__ == '__main__':
+  cache.init_app(app)
   app.run()
