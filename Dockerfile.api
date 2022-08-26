@@ -51,7 +51,7 @@ COPY .env .
 COPY utils.py .
 COPY insults.py .
 COPY tournament.py .
-COPY chatbot.py .
+COPY main.py .
 COPY config.py .
 COPY uwsgi.ini .
 COPY entrypoint.sh .
@@ -62,4 +62,4 @@ RUN chmod +x entrypoint.sh
 #WORKDIR /app
 
 CMD ["./entrypoint.sh"]
-#CMD . .venv/bin/activate && exec flask run chatbot.py --host=0.0.0.0
+#CMD . .venv/bin/activate && exec flask run main.py --host=0.0.0.0

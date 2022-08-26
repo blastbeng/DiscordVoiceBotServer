@@ -18,3 +18,4 @@ git+https://github.com/kinshuk-h/pytube
 pysqlite3
 redis==4.3.4
 Flask-Caching==2.0.1
+beautifulsoup4==4.9.3
