@@ -6,6 +6,7 @@ import wikipedia
 import sqlite3
 import json
 import insults
+import requests
 from chatterbot import ChatBot
 from chatterbot.conversation import Statement
 from chatterbot.trainers import ChatterBotCorpusTrainer
@@ -16,10 +17,10 @@ from io import BytesIO
 from pytube import YouTube
 from pytube import Search
 from pathlib import Path
+from google_translate_py import Translator
 
 EXCEPTION_WIKIPEDIA = 'Non ho trovato risultati per: '
 EXCEPTION_YOUTUBE_AUDIO = 'Errore nella riproduzione da Youtube.'
-
 
 wikipedia.set_lang("it")
 
@@ -151,3 +152,33 @@ def get_youtube_info(link: str):
   except:
     videos = []
     return videos  
+
+def html_decode(s):
+    """
+    Returns the ASCII decoded version of the given HTML string. This does
+    NOT remove normal HTML tags like <p>.
+    """
+    htmlCodes = (
+            ("'", '&#39;'),
+            ('"', '&quot;'),
+            ('>', '&gt;'),
+            ('<', '&lt;'),
+            ('&', '&amp;')
+        )
+    for code in htmlCodes:
+        s = s.replace(code[1], code[0])
+    return s
+
+def chuck():
+  url = 'http://api.icndb.com/jokes/random'
+  r = requests.get(url)
+  if r.status_code != 200:
+      pass
+      witz = 'Errore!'
+  else:
+      full_json = r.text
+      full = json.loads(full_json)
+      witz = (full['value']['joke'])
+  witz = html_decode(witz)
+
+  return Translator().translate(witz, "en", "it")

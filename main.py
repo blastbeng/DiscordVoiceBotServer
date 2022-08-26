@@ -3,6 +3,8 @@ import logging
 import utils
 import insults
 import tournament
+import requests
+import json
 from flask import Flask, request, send_file, Response, jsonify
 from flask_restx import Api, Resource, reqparse
 from chatterbot.conversation import Statement
@@ -100,7 +102,7 @@ class TextTournamentClass(Resource):
     return jsonify(tournament.generate_tournament(request.get_json()));
 
 @nstext.route('/tournament/regen')
-class TextTournamentRegebClass(Resource): 
+class TextTournamentRegenClass(Resource): 
   def post (self):
     content = request.get_json()
     return jsonify(tournament.regen_tournament(content['author'], content['name'], content['description']));
@@ -177,6 +179,14 @@ class YoutubeSearchClass(Resource):
     text = request.args.get("text")
     onevideo = request.args.get("onevideo")
     return utils.search_youtube_audio(text, bool(onevideo))
+
+nsjokes = api.namespace('jokes', 'Accumulators Jokes APIs')
+
+@nsjokes.route('/chuck')
+class ChuckClass(Resource):
+  @cache.cached(timeout=1)
+  def get(self):
+    return get_response_str(utils.chuck())
 
 if __name__ == '__main__':
   cache.init_app(app)
