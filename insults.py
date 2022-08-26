@@ -9,7 +9,7 @@ words = [ "brutto", "schifoso",  "ignobile",  "mi fai schifo",  "baciami il culo
 "omosessuale", "scassacazzi",  "stronzo", "bastardo",  "alcolizzato",  "bastardo",  "stronzo", 
 "puttaniere", "usuraio", "sadomasochista", "drogato",  "gallinaio",  "analfabeta",  "ignorante",  "pedofilo",  "schifoso",  
 "gay",  "frocio",  "mignottone",  "sessodipendente",  "handicappato",  "porco",  "minchione",  "testa di minchia",  "testa di cazzo",  
-"testa di figa", "leccafighe", "merda", "merdaccia", "infame", "bimbominkia", "cafone", "crucco", "farabutto", "pirla", "piciu", "polentone"
+"testa di figa", "leccafighe", "merda", "merdaccia", "infame", "bimbominkia", "cafone", "crucco", "farabutto", "pirla", "piciu", "polentone",
 "terrone", "quaquaraqua", "tamarro", "vucumpra", "eroinomane", "cocainomane", "cannato", "pezzente", "lurido", "verme",
 "nutria", "larva", "spazzatura", "immondizia", "bitume", "colata di sborra", "cagata bianca", "spruzzata di merda",
 "pulisciti la bocca", "pompinaro", "bocchinaro", "succhiacazzi", "fogna", "latrina", "schifo"]
