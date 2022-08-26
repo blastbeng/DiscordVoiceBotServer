@@ -170,15 +170,18 @@ def html_decode(s):
     return s
 
 def chuck():
-  url = 'http://api.icndb.com/jokes/random'
-  r = requests.get(url)
-  if r.status_code != 200:
-      pass
-      witz = 'Errore!'
-  else:
-      full_json = r.text
-      full = json.loads(full_json)
-      witz = (full['value']['joke'])
-  witz = html_decode(witz)
+  try:
+    url = 'http://api.icndb.com/jokes/random'
+    r = requests.get(url)
+    if r.status_code != 200:
+        pass
+        witz = 'Errore!'
+    else:
+        full_json = r.text
+        full = json.loads(full_json)
+        witz = (full['value']['joke'])
+    witz = html_decode(witz)
 
-  return Translator().translate(witz, "en", "it")
+    return Translator().translate(witz, "en", "it")
+  except:
+    return "Riprova tra qualche secondo..."
