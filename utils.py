@@ -7,6 +7,9 @@ import sqlite3
 import json
 import insults
 import requests
+import sys
+import json
+import os
 from chatterbot import ChatBot
 from chatterbot.conversation import Statement
 from chatterbot.trainers import ChatterBotCorpusTrainer
@@ -18,6 +21,9 @@ from pytube import YouTube
 from pytube import Search
 from pathlib import Path
 from google_translate_py import Translator
+
+CHUCK_API = os.environ.get("CHUCK_API")
+JOKES_API = os.environ.get("JOKES_API")
 
 EXCEPTION_WIKIPEDIA = 'Non ho trovato risultati per: '
 EXCEPTION_YOUTUBE_AUDIO = 'Errore nella riproduzione da Youtube.'
@@ -171,17 +177,32 @@ def html_decode(s):
 
 def chuck():
   try:
-    url = 'http://api.icndb.com/jokes/random'
-    r = requests.get(url)
+    r = requests.get(CHUCK_API)
     if r.status_code != 200:
         pass
-        witz = 'Errore!'
+        witz = "API non raggiungibile..."
     else:
         full_json = r.text
         full = json.loads(full_json)
         witz = (full['value']['joke'])
     witz = html_decode(witz)
 
-    return Translator().translate(witz, "en", "it")
+    return Translator().translate(witz, "en", "it").replace('"','')
+  except:
+    return "Riprova tra qualche secondo..."
+
+def random_joke():
+  try:
+    r = requests.get(JOKES_API)
+    if r.status_code != 200:
+        pass
+        witz = "API non raggiungibile..."
+    else:
+        full_json = r.text
+        full = json.loads(full_json)
+        witz = (full['body'][0]['setup'] + full['body'][0]['punchline']);
+    witz = html_decode(witz)
+
+    return Translator().translate(witz, "en", "it").replace('"','')
   except:
     return "Riprova tra qualche secondo..."

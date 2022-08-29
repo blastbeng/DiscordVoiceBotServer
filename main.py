@@ -180,13 +180,33 @@ class YoutubeSearchClass(Resource):
     onevideo = request.args.get("onevideo")
     return utils.search_youtube_audio(text, bool(onevideo))
 
-nsjokes = api.namespace('jokes', 'Accumulators Jokes APIs')
+nsjokes = api.namespace('jokes_text', 'Accumulators Jokes APIs')
 
 @nsjokes.route('/chuck')
-class ChuckClass(Resource):
+class TextChuckClass(Resource):
   @cache.cached(timeout=1)
   def get(self):
     return get_response_str(utils.chuck())
+
+@nsjokes.route('/random')
+class TextRandomJokeClass(Resource):
+  @cache.cached(timeout=1)
+  def get(self):
+    return get_response_str(utils.random_joke())
+
+nsjokes = api.namespace('jokes_audio', 'Accumulators Jokes APIs')
+
+@nsjokes.route('/chuck')
+class AudioChuckClass(Resource):
+  @cache.cached(timeout=1)
+  def get(self):
+    return send_file(utils.get_tts(utils.chuck()), attachment_filename='audio.wav', mimetype='audio/x-wav')
+
+@nsjokes.route('/random')
+class AudioRandomJokeClass(Resource):
+  @cache.cached(timeout=1)
+  def get(self):
+    return send_file(utils.get_tts(utils.random_joke()), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
 if __name__ == '__main__':
   cache.init_app(app)
