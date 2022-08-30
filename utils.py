@@ -8,7 +8,6 @@ import json
 import insults
 import requests
 import sys
-import json
 import os
 from chatterbot import ChatBot
 from chatterbot.conversation import Statement
@@ -22,8 +21,6 @@ from pytube import Search
 from pathlib import Path
 from google_translate_py import Translator
 
-CHUCK_API = os.environ.get("CHUCK_API")
-JOKES_API = os.environ.get("JOKES_API")
 
 EXCEPTION_WIKIPEDIA = 'Non ho trovato risultati per: '
 EXCEPTION_YOUTUBE_AUDIO = 'Errore nella riproduzione da Youtube.'
@@ -157,7 +154,7 @@ def get_youtube_info(link: str):
     return videos    
   except:
     videos = []
-    return videos  
+    return videos
 
 def html_decode(s):
     """
@@ -173,36 +170,52 @@ def html_decode(s):
         )
     for code in htmlCodes:
         s = s.replace(code[1], code[0])
-    return s
+    return s.strip()
 
-def chuck():
+def get_joke(cat: str):
   try:
-    r = requests.get(CHUCK_API)
+    url="http://192.168.1.160:3050/v1/jokes"
+    if cat != "":
+      params="category="+cat
+      url=url+"?"+params
+    r = requests.get(url)
     if r.status_code != 200:
-        pass
-        witz = "API non raggiungibile..."
+      return "API barzellette non raggiungibile..."
     else:
-        full_json = r.text
-        full = json.loads(full_json)
-        witz = (full['value']['joke'])
-    witz = html_decode(witz)
-
-    return Translator().translate(witz, "en", "it").replace('"','')
-  except:
+#      full_json = r.text
+      full = json.loads(r.text)
+      text = html_decode(full['data']['text'])
+      return text
+  except Exception as e:
+    exc_type, exc_obj, exc_tb = sys.exc_info()
+    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+    print(exc_type, fname, exc_tb.tb_lineno)
     return "Riprova tra qualche secondo..."
 
-def random_joke():
-  try:
-    r = requests.get(JOKES_API)
-    if r.status_code != 200:
-        pass
-        witz = "API non raggiungibile..."
-    else:
-        full_json = r.text
-        full = json.loads(full_json)
-        witz = (full['body'][0]['setup'] + full['body'][0]['punchline']);
-    witz = html_decode(witz)
 
-    return Translator().translate(witz, "en", "it").replace('"','')
+def scrape_jokes():
+  scrape_internal("LAPECORASCLERA")
+  scrape_internal("FUORIDITESTA")
+
+def scrape_internal(scraper: str):
+  try:
+    url="http://192.168.1.160:3050/v1/mngmnt/scrape"
+    params="scraper="+scraper
+    url=url+"?"+params
+    r = requests.get(url)
+    if r.status_code != 200:
+      print("---------------------")
+      print("Error scraping jokes!")
+      print("---------------------")
+      pass
+    else:
+      full_json = r.text
+      full = json.loads(full_json)
+      print("---------------------")
+      print("Jokes scraper result")
+      print("status:"+ full['status'])
+      print("numberTotal:"+ full['numberTotal'])
+      print("numberDone:"+ full['numberDone'])
+      print("---------------------")
   except:
-    return "Riprova tra qualche secondo..."
+    print("Error scraping jokes!")

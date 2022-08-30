@@ -7,6 +7,8 @@ import requests
 import json
 from flask import Flask, request, send_file, Response, jsonify
 from flask_restx import Api, Resource, reqparse
+from apscheduler.schedulers.background import BackgroundScheduler
+from apscheduler.executors.pool import ThreadPoolExecutor, ProcessPoolExecutor
 from chatterbot.conversation import Statement
 from flask_caching import Cache
 from os.path import join, dirname
@@ -22,6 +24,14 @@ log.setLevel(logging.ERROR)
 
 chatbot = utils.get_chatterbot(None, False)
 tournament.create_empty_tables()
+
+executors = {
+    'default': ThreadPoolExecutor(16),
+    'processpool': ProcessPoolExecutor(4)
+}
+
+sched = BackgroundScheduler(timezone='Europe/Rome', executors=executors)
+
 
 app = Flask(__name__)
 config = {    
@@ -180,34 +190,50 @@ class YoutubeSearchClass(Resource):
     onevideo = request.args.get("onevideo")
     return utils.search_youtube_audio(text, bool(onevideo))
 
-nsjokes = api.namespace('jokes_text', 'Accumulators Jokes APIs')
+nsjokestext = api.namespace('jokes_text', 'Accumulators Jokes APIs')
 
-@nsjokes.route('/chuck')
+@nsjokestext.route('/chuck')
 class TextChuckClass(Resource):
   @cache.cached(timeout=1)
   def get(self):
-    return get_response_str(utils.chuck())
+    return get_response_str(utils.get_joke("CHUCK_NORRIS"))
 
-@nsjokes.route('/random')
+@nsjokestext.route('/random')
 class TextRandomJokeClass(Resource):
   @cache.cached(timeout=1)
   def get(self):
-    return get_response_str(utils.random_joke())
+    return get_response_str(utils.get_joke(""))
 
-nsjokes = api.namespace('jokes_audio', 'Accumulators Jokes APIs')
+nsjokesaudio = api.namespace('jokes_audio', 'Accumulators Jokes Audio APIs')
 
-@nsjokes.route('/chuck')
+@nsjokesaudio.route('/chuck')
 class AudioChuckClass(Resource):
   @cache.cached(timeout=1)
   def get(self):
-    return send_file(utils.get_tts(utils.chuck()), attachment_filename='audio.wav', mimetype='audio/x-wav')
+    try:
+      text = utils.get_joke("CHUCK_NORRIS")
+      tts = utils.get_tts(text)
+      return send_file(tts, attachment_filename='audio.wav', mimetype='audio/x-wav')
+    except:
+      return send_file(utils.get_tts("Riprova tra qualche secondo..."), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
-@nsjokes.route('/random')
+@nsjokesaudio.route('/random')
 class AudioRandomJokeClass(Resource):
   @cache.cached(timeout=1)
   def get(self):
-    return send_file(utils.get_tts(utils.random_joke()), attachment_filename='audio.wav', mimetype='audio/x-wav')
+    try:
+      text = utils.get_joke("")
+      tts = utils.get_tts(text)
+      return send_file(tts, attachment_filename='audio.wav', mimetype='audio/x-wav')
+    except:
+      return send_file(utils.get_tts("Riprova tra qualche secondo..."), attachment_filename='audio.wav', mimetype='audio/x-wav')
+
+def scrape_jokes():
+  utils.scrape_jokes()
+
+sched.add_job(scrape_jokes, 'interval', hours=12)
 
 if __name__ == '__main__':
+  sched.start()
   cache.init_app(app)
   app.run()

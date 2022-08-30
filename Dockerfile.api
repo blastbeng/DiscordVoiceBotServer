@@ -25,7 +25,7 @@ RUN apt-get update && \
         python3-dev \
         procps
         
-RUN echo 'sysctl vm.overcommit_memory=1' >> /etc/sysctl.conf
+RUN echo 'vm.overcommit_memory=1' >> /etc/sysctl.conf
 
 RUN sed -i '/it_IT.UTF-8/s/^# //g' /etc/locale.gen && \
     locale-gen
