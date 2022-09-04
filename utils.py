@@ -9,6 +9,7 @@ import insults
 import requests
 import sys
 import os
+import datetime
 from chatterbot import ChatBot
 from chatterbot.conversation import Statement
 from chatterbot.trainers import ChatterBotCorpusTrainer
@@ -20,7 +21,9 @@ from pytube import YouTube
 from pytube import Search
 from pathlib import Path
 from google_translate_py import Translator
+from faker import Faker
 
+fake = Faker()
 
 EXCEPTION_WIKIPEDIA = 'Non ho trovato risultati per: '
 EXCEPTION_YOUTUBE_AUDIO = 'Errore nella riproduzione da Youtube.'
@@ -166,7 +169,9 @@ def html_decode(s):
             ('"', '&quot;'),
             ('>', '&gt;'),
             ('<', '&lt;'),
-            ('&', '&amp;')
+            ('&', '&amp;'),
+            ('', '“'),
+            ('', '"'),
         )
     for code in htmlCodes:
         s = s.replace(code[1], code[0])
@@ -194,28 +199,43 @@ def get_joke(cat: str):
 
 
 def scrape_jokes():
-  scrape_internal("LAPECORASCLERA")
-  scrape_internal("FUORIDITESTA")
+  print("--- START : JOKES SCRAPER ---")
+  #print("-----------------------------")
+  #scrape_internal("LAPECORASCLERA", "1")
+  #print("-----------------------------")
+  #scrape_internal("FUORIDITESTA", "1")
+  print("-----------------------------")
+  scrape_internal("LAPECORASCLERA", "0")
+  print("-----------------------------")
+  scrape_internal("FUORIDITESTA", "0")
+  print("-----------------------------")
+  print("---- END : JOKES SCRAPER ----")
 
-def scrape_internal(scraper: str):
+def scrape_internal(scraper: str, page: str):
   try:
     url="http://192.168.1.160:3050/v1/mngmnt/scrape"
     params="scraper="+scraper
+    if page != 0:
+      params = params+"&pageNum="+page
     url=url+"?"+params
     r = requests.get(url)
     if r.status_code != 200:
-      print("---------------------")
-      print("Error scraping jokes!")
-      print("---------------------")
+      print(scraper + ": Error scraping jokes!")
       pass
     else:
       full_json = r.text
       full = json.loads(full_json)
-      print("---------------------")
-      print("Jokes scraper result")
-      print("status:"+ full['status'])
-      print("numberTotal:"+ full['numberTotal'])
-      print("numberDone:"+ full['numberDone'])
-      print("---------------------")
-  except:
+      print(scraper + ": Jokes scraper result")
+      print("status:"+ str(full['status']))
+      print("numberTotal:"+ str(full['numberTotal']))
+      print("numberDone:"+ str(full['numberDone']))
+  except Exception as e:
+    exc_type, exc_obj, exc_tb = sys.exc_info()
+    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+    print(exc_type, fname, exc_tb.tb_lineno)
     print("Error scraping jokes!")
+
+def get_random_date():
+  offset = '-' + str(random.randint(1, 4)) + 'y'
+  date = fake.date_time_between(start_date=offset, end_date='now').strftime("%Y-%m-%d")
+  return date

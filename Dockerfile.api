@@ -50,6 +50,8 @@ WORKDIR /app
 COPY .env .
 COPY utils.py .
 COPY insults.py .
+COPY reddit.py .
+#COPY twitter.py .
 COPY tournament.py .
 COPY main.py .
 COPY config.py .

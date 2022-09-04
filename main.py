@@ -5,17 +5,13 @@ import insults
 import tournament
 import requests
 import json
+import threading
 from flask import Flask, request, send_file, Response, jsonify
 from flask_restx import Api, Resource, reqparse
 from apscheduler.schedulers.background import BackgroundScheduler
 from apscheduler.executors.pool import ThreadPoolExecutor, ProcessPoolExecutor
 from chatterbot.conversation import Statement
 from flask_caching import Cache
-from os.path import join, dirname
-from dotenv import load_dotenv
-
-dotenv_path = join(dirname(__file__), '.env')
-load_dotenv(dotenv_path)
 
 logging.basicConfig(level=logging.ERROR)
 
@@ -23,6 +19,7 @@ log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
 chatbot = utils.get_chatterbot(None, False)
+#twitter.create_empty_tables()
 tournament.create_empty_tables()
 
 executors = {
@@ -72,7 +69,8 @@ class TextRepeatClass(Resource):
 class TextRepeatLearnClass(Resource):
   @cache.cached(timeout=3000, query_string=True)
   def get (self, text: str):
-    chatbot.get_response(text)
+    #chatbot.get_response(text)
+    threading.Timer(0, chatbot.get_response, args=[text]).start()
     return get_response_str(text)
 
 @nstext.route('/ask/<string:text>')
@@ -99,7 +97,8 @@ class TextInsultClass(Resource):
   @cache.cached(timeout=1, query_string=True)
   def get (self):
     sentence = insults.get_insults()
-    chatbot.get_response(sentence)
+    #chatbot.get_response(sentence)
+    threading.Timer(0, chatbot.get_response, args=[sentence]).start()
     text = request.args.get("text")
     if text and text != '' and text != 'none':
       sentence = text + " " + sentence
@@ -130,7 +129,8 @@ class AudioRepeatClass(Resource):
 class AudioRepeatLearnClass(Resource):
   @cache.cached(timeout=3000, query_string=True)
   def get (self, text: str):
-    chatbot.get_response(text)
+    #chatbot.get_response(text)
+    threading.Timer(0, chatbot.get_response, args=[text]).start()
     return send_file(utils.get_tts(text), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
 @nsaudio.route('/ask/<string:text>')
@@ -151,7 +151,8 @@ class AudioInsultClass(Resource):
   @cache.cached(timeout=10, query_string=True)
   def get (self):
     sentence = insults.get_insults()
-    chatbot.get_response(sentence)
+    #chatbot.get_response(sentence)
+    threading.Timer(0, chatbot.get_response, args=[sentence]).start()
     text = request.args.get("text")
     if text and text != '' and text != 'none':
       sentence = text + " " + sentence
@@ -228,10 +229,33 @@ class AudioRandomJokeClass(Resource):
     except:
       return send_file(utils.get_tts("Riprova tra qualche secondo..."), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
-def scrape_jokes():
-  utils.scrape_jokes()
 
-sched.add_job(scrape_jokes, 'interval', hours=12)
+nswebtext = api.namespace('reddit', 'Accumulators Reddit APIs')
+
+@nswebtext.route('/search/<string:word>')
+class TextRedditSearchClass(Resource):
+  @cache.cached(timeout=1, query_string=True)
+  def get(self, word: str):
+    return jsonify(reddit.search(word).__dict__)
+
+#nswebtext = api.namespace('twitter', 'Accumulators Twitter APIs')
+
+#@nswebtext.route('/search/random/byhashtag/<string:word>')
+#class TextTwitterLocalSearchClass(Resource):
+#  @cache.cached(timeout=1, query_string=True)
+#  def get(self, word: str):
+#    return jsonify(twitter.search_random(word, sched, 0).__dict__)
+
+#@nswebtext.route('/search/random')
+#class TextTwitterRandomSearchClass(Resource):
+#  @cache.cached(timeout=1, query_string=True)
+#  def get(self):
+#    return jsonify(twitter.search_all_random())
+
+#for tw_search in twitter.get_all_searches():
+#  sched.add_job(twitter.scrape, 'interval', args=[tw_search,50], hours=2, id=tw_search)
+
+sched.add_job(utils.scrape_jokes, 'interval', hours=2, id="battute")
 
 if __name__ == '__main__':
   sched.start()
