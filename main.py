@@ -1,5 +1,6 @@
 import os
 import logging
+import image
 import utils
 import insults
 import tournament
@@ -75,7 +76,6 @@ class TextRepeatLearnClass(Resource):
 
 @nstext.route('/ask/<string:text>')
 class TextAskClass(Resource):
-  @cache.cached(timeout=1, query_string=True)
   def get (self, text: str):
     return get_response_str(chatbot.get_response(text).text)
 
@@ -94,7 +94,6 @@ class TextLearnClass(Resource):
 @nstext.route('/insult')
 class TextInsultClass(Resource):
   @api.expect(parserinsult)
-  @cache.cached(timeout=1, query_string=True)
   def get (self):
     sentence = insults.get_insults()
     #chatbot.get_response(sentence)
@@ -135,7 +134,6 @@ class AudioRepeatLearnClass(Resource):
 
 @nsaudio.route('/ask/<string:text>')
 class AudioAskClass(Resource):
-  @cache.cached(timeout=1, query_string=True)
   def get (self, text: str):
     return send_file(utils.get_tts(chatbot.get_response(text).text), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
@@ -148,7 +146,6 @@ class AudioSearchClass(Resource):
 @nsaudio.route('/insult')
 class AudioInsultClass(Resource):
   @api.expect(parserinsult)
-  @cache.cached(timeout=10, query_string=True)
   def get (self):
     sentence = insults.get_insults()
     #chatbot.get_response(sentence)
@@ -201,7 +198,6 @@ class TextChuckClass(Resource):
 
 @nsjokestext.route('/random')
 class TextRandomJokeClass(Resource):
-  @cache.cached(timeout=1)
   def get(self):
     return get_response_str(utils.get_joke(""))
 
@@ -209,7 +205,6 @@ nsjokesaudio = api.namespace('jokes_audio', 'Accumulators Jokes Audio APIs')
 
 @nsjokesaudio.route('/chuck')
 class AudioChuckClass(Resource):
-  @cache.cached(timeout=1)
   def get(self):
     try:
       text = utils.get_joke("CHUCK_NORRIS")
@@ -220,7 +215,6 @@ class AudioChuckClass(Resource):
 
 @nsjokesaudio.route('/random')
 class AudioRandomJokeClass(Resource):
-  @cache.cached(timeout=1)
   def get(self):
     try:
       text = utils.get_joke("")
@@ -234,9 +228,19 @@ nswebtext = api.namespace('reddit', 'Accumulators Reddit APIs')
 
 @nswebtext.route('/search/<string:word>')
 class TextRedditSearchClass(Resource):
-  @cache.cached(timeout=1, query_string=True)
   def get(self, word: str):
     return jsonify(reddit.search(word).__dict__)
+
+
+
+nsimages = api.namespace('images', 'Accumulators Images APIs')
+
+@nsimages.route('/search/<string:words>')
+class AudioSearchClass(Resource):
+  def get (self, words: str):
+    threading.Timer(0, chatbot.get_response, args=[words]).start()
+    bytes_img, attachment_filename, mimetype = image.search(words)
+    return send_file(bytes_img, attachment_filename=attachment_filename, mimetype=mimetype)
 
 #nswebtext = api.namespace('twitter', 'Accumulators Twitter APIs')
 

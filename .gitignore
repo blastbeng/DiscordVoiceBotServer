@@ -131,3 +131,7 @@ dmypy.json
 .pyre/
 .vscode/
 config/
+pixray
+pixray/
+diffvg
+diffvg/

@@ -23,7 +23,8 @@ RUN apt-get update && \
         libffi-dev \
         python3-venv \
         python3-dev \
-        procps
+        procps \
+        python3-enchant
         
 RUN echo 'vm.overcommit_memory=1' >> /etc/sysctl.conf
 
@@ -53,6 +54,7 @@ COPY insults.py .
 COPY reddit.py .
 #COPY twitter.py .
 COPY tournament.py .
+COPY image.py .
 COPY main.py .
 COPY config.py .
 COPY uwsgi.ini .
