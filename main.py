@@ -19,9 +19,6 @@ logging.basicConfig(level=logging.ERROR)
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.ERROR)
 
-chatbot = utils.get_chatterbot(None, False)
-#twitter.create_empty_tables()
-tournament.create_empty_tables()
 
 executors = {
     'default': ThreadPoolExecutor(16),
@@ -128,6 +125,14 @@ class AudioRepeatClass(Resource):
 class AudioRepeatLearnClass(Resource):
   @cache.cached(timeout=3000, query_string=True)
   def get (self, text: str):
+    #chatbot.get_response(text)
+    threading.Timer(0, chatbot.get_response, args=[text]).start()
+    return send_file(utils.get_tts(text), attachment_filename='audio.wav', mimetype='audio/x-wav')
+
+@nsaudio.route('/repeat/learn/user/<string:user>/<string:text>')
+class AudioRepeatLearnUserClass(Resource):
+  @cache.cached(timeout=3000, query_string=True)
+  def get (self, user: str, text: str):
     #chatbot.get_response(text)
     threading.Timer(0, chatbot.get_response, args=[text]).start()
     return send_file(utils.get_tts(text), attachment_filename='audio.wav', mimetype='audio/x-wav')
@@ -259,8 +264,13 @@ class AudioSearchClass(Resource):
 #for tw_search in twitter.get_all_searches():
 #  sched.add_job(twitter.scrape, 'interval', args=[tw_search,50], hours=2, id=tw_search)
 
-sched.add_job(utils.scrape_jokes, 'interval', hours=2, id="battute")
 
+if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+  chatbot = utils.get_chatterbot(None, False)
+  #twitter.create_empty_tables()
+  tournament.create_empty_tables()
+  sched.add_job(utils.scrape_jokes, 'interval', hours=2, id="battute")
+  
 if __name__ == '__main__':
   sched.start()
   cache.init_app(app)
