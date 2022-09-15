@@ -18,8 +18,8 @@ from chatterbot.trainers import ChatterBotCorpusTrainer
 from chatterbot.comparisons import LevenshteinDistance
 #from chatterbot.comparisons import SpacySimilarity
 #from chatterbot.comparisons import JaccardSimilarity
-from chatterbot.response_selection import get_random_response
-#from chatterbot.response_selection import get_most_frequent_response
+#from chatterbot.response_selection import get_random_response
+from chatterbot.response_selection import get_most_frequent_response
 from gtts import gTTS
 from io import BytesIO
 from pytube import YouTube
