@@ -1,9 +1,11 @@
 python-dotenv
-flask
-flask-restx
+werkzeug==2.1.2
+Flask~=2.1.2
+flask-restx==0.5.1
 click<8.1.0
 git+https://github.com/blastbeng/ChatterBot
-git+https://github.com/gunthercox/chatterbot-corpus
+#git+https://github.com/blastbeng/chatterbot-corpus
+chatterbot-corpus
 spacy
 pyyaml
 itsdangerous
@@ -14,3 +16,12 @@ wikipedia
 gtts
 git+https://github.com/kinshuk-h/pytube
 pysqlite3
+redis==4.3.4
+Flask-Caching==2.0.1
+google-translate.py
+Flask-APScheduler
+Tweepy
+faker
+praw
+pyenchant
+markovipy

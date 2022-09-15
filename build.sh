@@ -1,2 +1,2 @@
 #!/bin/sh
-docker build . -f ./Dockerfile.api  -t discord-voicebot-api:latest
+docker build . -f ./Dockerfile.api  -t scemo-pezzente-api:latest

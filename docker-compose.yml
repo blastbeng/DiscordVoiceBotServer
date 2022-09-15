@@ -1,0 +1,46 @@
+---
+version: "3.3"
+services:
+  scemo-pezzente-api:
+    container_name: scemo-pezzente-api
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Rome
+    image: "scemo-pezzente-api:latest"
+    restart: "no"
+    volumes:
+      - ".env:/app/.env"
+      - "./config:/app/config"
+      - "./data:/app/data"
+      - "/tmp/scemo-pezzente-api:/tmp/scemo-pezzente-api"
+      - "/dev/dri/card0:/dev/dri/card0"
+      - "/dev/dri/renderD128:/dev/dri/renderD128"
+    ports:
+      - 5080:5080
+    networks:
+      - caching
+#      - battuteapi
+  battuteapi:
+    container_name: battuteapi
+    environment:
+      - PUID=1000
+      - PGID=1000
+      - TZ=Europe/Rome
+    image: "battuteapi:latest"
+    volumes:
+      - ./config/battuteapi_data:/usr/src/app/data
+    ports:
+      - 3050:3050
+#    networks:
+#      - battuteapi
+  redis:
+    image: redis
+    container_name: voicebot-redis
+    networks:
+      - caching
+networks:
+  caching:
+    driver: bridge
+#  battuteapi:
+#    name: battuteapi
