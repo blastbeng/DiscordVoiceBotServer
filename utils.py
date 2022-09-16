@@ -335,6 +335,8 @@ def extract_sentences_from_chatbot(filename: str, word: str, distinct: bool):
       
     globalsanit = ""
 
+    count = 1
+
     with open(filename, 'a') as sentence_file:
       records_len = len(records)-1
       for row in records:
@@ -347,7 +349,8 @@ def extract_sentences_from_chatbot(filename: str, word: str, distinct: bool):
             sanitized = sanitized + "\n"
 
           if distinct:
-            globalsanit = globalsanit + sanitized
+            globalsanit = globalsanit + str(count) + ". "+ sanitized
+            count = count + 1
 
           sentence_file.write(sanitized)
 
