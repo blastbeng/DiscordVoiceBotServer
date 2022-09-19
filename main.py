@@ -15,10 +15,10 @@ from chatterbot.conversation import Statement
 from flask_caching import Cache
 from markovipy import MarkoviPy
 
-logging.basicConfig(level=logging.ERROR)
+logging.basicConfig(level=logging.INFO)
 
 log = logging.getLogger('werkzeug')
-log.setLevel(logging.ERROR)
+log.setLevel(logging.INFO)
 
 
 app = Flask(__name__)
@@ -76,15 +76,15 @@ class AudioRepeatLearnUserClass(Resource):
     return send_file(utils.get_tts(text), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
 @nstext.route('/ask/<string:text>')
-class TextAskUserClass(Resource):
+class TextAskClass(Resource):
   def get (self, text: str):
     return get_response_str(chatbot.get_response(text).text)
 
-@nstext.route('/ask/user/<string:text>/<string:user>')
+@nstext.route('/ask/user/<string:user>/<string:text>')
 class TextAskUserClass(Resource):
   def get (self, user: str, text: str):
     dolearn = False;
-    if user in previousMessages:
+    if user not in previousMessages:
       dolearn=True
     chatbot_response = chatbot.get_response(text, learn=dolearn).text
     if user in previousMessages:
@@ -103,7 +103,7 @@ class TextLearnClass(Resource):
   @cache.cached(timeout=10, query_string=True)
   def get (self, text: str, response: str):
     utils.learn(text, response, chatbot)
-    return "Ho imparato: " + testo + " => " + risposta
+    return "Ho imparato: " + text + " => " + response
 
 @nstext.route('/insult')
 class TextInsultClass(Resource):
@@ -164,7 +164,7 @@ class AudioAskClass(Resource):
 class AudioAskUserClass(Resource):
   def get (self, user: str, text: str):
     dolearn = False;
-    if user in previousMessages:
+    if user not in previousMessages:
       dolearn=True
     chatbot_response = chatbot.get_response(text, learn=dolearn).text
     if user in previousMessages:
@@ -345,8 +345,9 @@ class UtilsPopulateSentencesParsed(Resource):
 
 if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
   previousMessages = {}
-  chatbot = utils.get_chatterbot(None, None)
   utils.check_sentences_file_exists()
+  utils.extract_sentences_from_chatbot('./config/sentences.txt', None, True)
+  chatbot = utils.get_chatterbot('./config/trainfile.txt')
   #twitter.create_empty_tables()
   tournament.create_empty_tables()
   cache.init_app(app)
@@ -359,9 +360,9 @@ if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
 def scrape_jokes():
   utils.scrape_jokes()
   
-#@scheduler.task('interval', id='extract_sentences', hours=24, misfire_grace_time=900)
-#def extract_sentences():
-#  utils.extract_sentences_from_chatbot('./config/sentences.txt', None)
+@scheduler.task('interval', id='extract_sentences', hours=24, misfire_grace_time=900)
+def extract_sentences():
+  utils.extract_sentences_from_chatbot('./config/sentences.txt', None, True)
   
 @scheduler.task('cron', id='populate_sentences', hour=4, minute=10, second=0, misfire_grace_time=900)
 def populate_sentences():

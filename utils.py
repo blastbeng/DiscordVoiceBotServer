@@ -14,12 +14,12 @@ import datetime
 import string
 from chatterbot import ChatBot
 from chatterbot.conversation import Statement
-from chatterbot.trainers import ChatterBotCorpusTrainer
-from chatterbot.comparisons import LevenshteinDistance
+from chatterbot.trainers import ListTrainer
+#from chatterbot.comparisons import LevenshteinDistance
 #from chatterbot.comparisons import SpacySimilarity
 #from chatterbot.comparisons import JaccardSimilarity
 #from chatterbot.response_selection import get_random_response
-from chatterbot.response_selection import get_most_frequent_response
+#from chatterbot.response_selection import get_most_frequent_response
 from gtts import gTTS
 from io import BytesIO
 from pytube import YouTube
@@ -78,7 +78,7 @@ def clean_input(testo: str):
   else:
     return True
 
-def get_chatterbot(outfile: str, infile: str):
+def get_chatterbot(trainfile: str):
   fle = Path('./config/db.sqlite3')
   fle.touch(exist_ok=True)
   f = open(fle)
@@ -90,23 +90,25 @@ def get_chatterbot(outfile: str, infile: str):
       storage_adapter='chatterbot.storage.SQLStorageAdapter',
       database_uri='sqlite:///config/db.sqlite3',
       logic_adapters=[
-          'chatterbot.logic.BestMatch'
-      ],
-      statement_comparison_function = LevenshteinDistance,
+          {
+              'import_path': 'chatterbot.logic.BestMatch',
+              'maximum_similarity_threshold': 0.90
+          }
+      ]
+      #statement_comparison_function = LevenshteinDistance,
       #statement_comparison_function = SpacySimilarity,
       #statement_comparison_function = JaccardSimilarity,
       #response_selection_method = get_random_response,
-      response_selection_method = get_most_frequent_response
+      #response_selection_method = get_most_frequent_response
   )
-  if infile is not None or outfile is not None:
-    trainer = ChatterBotCorpusTrainer(chatbot)
-    if outfile is not None:
-      trainer.export_for_training(outfile)
-      if infile is not None and not os.path.exists(infile):
-        shutil.copyfile(outfile, infile)
-    if infile is not None and os.path.exists(infile):
-      trainer = ChatterBotCorpusTrainer(chatbot)
-      trainer.train(infile)
+
+  if os.path.isfile(trainfile):
+    trainer = ListTrainer(chatbot)
+    trainfile_array = []
+    with open(trainfile) as file:
+        for line in file:
+            trainfile_array.append(line.strip())
+    trainer.train(trainfile_array)
       
   with sqlite3.connect("./config/db.sqlite3") as db:
     cursor = db.cursor()
@@ -119,7 +121,7 @@ def get_chatterbot(outfile: str, infile: str):
 def learn(testo: str, risposta: str, chatbot: ChatBot):
   input_statement = Statement(text=testo)
   correct_response = Statement(text=risposta)
-  chatbot.learn_response(correct_response, input_statement)
+  chatbot.learn_response(correct_response, previous_statement=input_statement)
 
 def recreate_file(filename: str):
   if os.path.exists(filename):
