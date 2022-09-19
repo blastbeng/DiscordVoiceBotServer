@@ -66,10 +66,31 @@ class TextRepeatLearnClass(Resource):
     threading.Timer(0, chatbot.get_response, args=[text]).start()
     return get_response_str(text)
 
+@nstext.route('/repeat/learn/user/<string:user>/<string:text>')
+class AudioRepeatLearnUserClass(Resource):
+  @cache.cached(timeout=3000, query_string=True)
+  def get (self, user: str, text: str):
+    if user in previousMessages:
+      utils.learn(previousMessages[user], text, chatbot)
+    previousMessages[user] = text
+    return send_file(utils.get_tts(text), attachment_filename='audio.wav', mimetype='audio/x-wav')
+
 @nstext.route('/ask/<string:text>')
-class TextAskClass(Resource):
+class TextAskUserClass(Resource):
   def get (self, text: str):
     return get_response_str(chatbot.get_response(text).text)
+
+@nstext.route('/ask/user/<string:text>/<string:user>')
+class TextAskUserClass(Resource):
+  def get (self, user: str, text: str):
+    dolearn = False;
+    if user in previousMessages:
+      dolearn=True
+    chatbot_response = chatbot.get_response(text, learn=dolearn).text
+    if user in previousMessages:
+      utils.learn(previousMessages[user], text, chatbot)
+    previousMessages[user] = chatbot_response
+    return get_response_str(chatbot_response)
 
 @nstext.route('/search/<string:text>')
 class TextSearchClass(Resource):
@@ -129,14 +150,27 @@ class AudioRepeatLearnClass(Resource):
 class AudioRepeatLearnUserClass(Resource):
   @cache.cached(timeout=3000, query_string=True)
   def get (self, user: str, text: str):
-    #chatbot.get_response(text)
-    threading.Timer(0, chatbot.get_response, args=[text]).start()
+    if user in previousMessages:
+      utils.learn(previousMessages[user], text, chatbot)
+    previousMessages[user] = text
     return send_file(utils.get_tts(text), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
 @nsaudio.route('/ask/<string:text>')
 class AudioAskClass(Resource):
   def get (self, text: str):
     return send_file(utils.get_tts(chatbot.get_response(text).text), attachment_filename='audio.wav', mimetype='audio/x-wav')
+
+@nsaudio.route('/ask/user/<string:user>/<string:text>')
+class AudioAskUserClass(Resource):
+  def get (self, user: str, text: str):
+    dolearn = False;
+    if user in previousMessages:
+      dolearn=True
+    chatbot_response = chatbot.get_response(text, learn=dolearn).text
+    if user in previousMessages:
+      utils.learn(previousMessages[user], text, chatbot)
+    previousMessages[user] = chatbot_response
+    return send_file(utils.get_tts(chatbot_response), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
 #def thread_wait(i):
 #    time.sleep(i)
@@ -290,7 +324,9 @@ nsutils = api.namespace('utils', 'AccumulatorsUtils APIs')
 @nsutils.route('/sentence/extract')
 class UtilsExtractSentences(Resource):
   def get (self):
-    return get_response_str(utils.extract_sentences_from_chatbot('./config/sentences.txt', None, True))
+    #return get_response_str(utils.extract_sentences_from_chatbot('./config/sentences.txt', None, True))
+    utils.extract_sentences_from_chatbot('./config/sentences.txt', None, True)
+    return send_file('./config/sentences.txt', attachment_filename='sentences.txt', mimetype='text/plain')
 
 @nsutils.route('/sentence/random')
 class UtilsRandomSentences(Resource):
@@ -308,6 +344,7 @@ class UtilsPopulateSentencesParsed(Resource):
     return get_response_str(utils.populate_new_sentences(chatbot, count, word))
 
 if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
+  previousMessages = {}
   chatbot = utils.get_chatterbot(None, None)
   utils.check_sentences_file_exists()
   #twitter.create_empty_tables()

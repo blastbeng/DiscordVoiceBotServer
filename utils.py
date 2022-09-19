@@ -311,7 +311,7 @@ def get_random_date():
   return date
 
 def extract_sentences_from_chatbot(filename: str, word: str, distinct: bool):
-  globalsanit = ""
+  #globalsanit = ""
   try:
     sqliteConnection = sqlite3.connect('./config/db.sqlite3')
     cursor = sqliteConnection.cursor()
@@ -348,9 +348,9 @@ def extract_sentences_from_chatbot(filename: str, word: str, distinct: bool):
           if records.index(row) != records_len:
             sanitized = sanitized + "\n"
 
-          if distinct:
-            globalsanit = globalsanit + str(count) + ". "+ sanitized
-            count = count + 1
+          #if distinct:
+          #  globalsanit = globalsanit + str(count) + ". "+ sanitized
+          #  count = count + 1
 
           sentence_file.write(sanitized)
 
@@ -363,8 +363,8 @@ def extract_sentences_from_chatbot(filename: str, word: str, distinct: bool):
   finally:
     if sqliteConnection:
         sqliteConnection.close()
-  if distinct:
-    return globalsanit
+  #if distinct:
+  #  return globalsanit
 
 
 def check_sentences_file_exists(): 
