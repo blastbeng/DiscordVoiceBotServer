@@ -325,7 +325,7 @@ nsutils = api.namespace('utils', 'AccumulatorsUtils APIs')
 class UtilsExtractSentences(Resource):
   def get (self):
     #return get_response_str(utils.extract_sentences_from_chatbot('./config/sentences.txt', None, True))
-    utils.extract_sentences_from_chatbot('./config/sentences.txt', None, True)
+    utils.extract_sentences_from_chatbot('./config/sentences.txt', None, True, None)
     return send_file('./config/sentences.txt', attachment_filename='sentences.txt', mimetype='text/plain')
 
 @nsutils.route('/sentence/random')
@@ -336,18 +336,25 @@ class UtilsRandomSentences(Resource):
 @nsutils.route('/sentence/populate/<int:count>')
 class UtilsPopulateSentences(Resource):
   def get (self, count: int):
-    return get_response_str(utils.populate_new_sentences(chatbot, count, None))
+    threading.Timer(0, utils.populate_new_sentences, args=[chatbot, count, None, False]).start()
+    return "Starting thread populate_new_sentences with parameters: " + str(count) + ", None. Watch the logs."
 
 @nsutils.route('/sentence/populate/parsed/<int:count>/<string:word>')
 class UtilsPopulateSentencesParsed(Resource):
   def get (self, count: int, word: str):
-    return get_response_str(utils.populate_new_sentences(chatbot, count, word))
+    threading.Timer(0, utils.populate_new_sentences, args=[chatbot, count, word, False]).start()
+    return "Starting thread populate_new_sentences with parameters: " + str(count) + ", " + word + ". Watch the logs."
+
+@nsutils.route('/sentence/populate/parsed/api/<string:word>')
+class UtilsPopulateSentencesParsedApi(Resource):
+  def get (self, word: str):
+    return get_response_str(utils.populate_new_sentences(chatbot, 5, word, True))
 
 if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
   previousMessages = {}
-  utils.check_sentences_file_exists()
-  utils.extract_sentences_from_chatbot('./config/sentences.txt', None, True)
   chatbot = utils.get_chatterbot('./config/trainfile.txt')
+  utils.check_sentences_file_exists()
+  utils.extract_sentences_from_chatbot('./config/sentences.txt', None, True, None)
   #twitter.create_empty_tables()
   tournament.create_empty_tables()
   cache.init_app(app)
@@ -362,11 +369,11 @@ def scrape_jokes():
   
 @scheduler.task('interval', id='extract_sentences', hours=24, misfire_grace_time=900)
 def extract_sentences():
-  utils.extract_sentences_from_chatbot('./config/sentences.txt', None, True)
+  utils.extract_sentences_from_chatbot('./config/sentences.txt', None, True, None)
   
 @scheduler.task('cron', id='populate_sentences', hour=4, minute=10, second=0, misfire_grace_time=900)
 def populate_sentences():
-  print(utils.populate_new_sentences(chatbot, 100, None))
+  print(utils.populate_new_sentences(chatbot, 1000, None, False))
 
 if __name__ == '__main__':
   app.run()

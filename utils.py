@@ -15,11 +15,11 @@ import string
 from chatterbot import ChatBot
 from chatterbot.conversation import Statement
 from chatterbot.trainers import ListTrainer
-#from chatterbot.comparisons import LevenshteinDistance
+from chatterbot.comparisons import LevenshteinDistance
 #from chatterbot.comparisons import SpacySimilarity
 #from chatterbot.comparisons import JaccardSimilarity
 #from chatterbot.response_selection import get_random_response
-#from chatterbot.response_selection import get_most_frequent_response
+from chatterbot.response_selection import get_most_frequent_response
 from gtts import gTTS
 from io import BytesIO
 from pytube import YouTube
@@ -89,27 +89,26 @@ def get_chatterbot(trainfile: str):
       'PezzenteCapo',
       storage_adapter='chatterbot.storage.SQLStorageAdapter',
       database_uri='sqlite:///config/db.sqlite3',
+      statement_comparison_function = LevenshteinDistance,
+      response_selection_method = get_most_frequent_response,
       logic_adapters=[
           {
               'import_path': 'chatterbot.logic.BestMatch',
               'maximum_similarity_threshold': 0.90
           }
       ]
-      #statement_comparison_function = LevenshteinDistance,
-      #statement_comparison_function = SpacySimilarity,
-      #statement_comparison_function = JaccardSimilarity,
-      #response_selection_method = get_random_response,
-      #response_selection_method = get_most_frequent_response
   )
 
   if os.path.isfile(trainfile):
+    print("Loading: " + trainfile)
     trainer = ListTrainer(chatbot)
     trainfile_array = []
     with open(trainfile) as file:
         for line in file:
             trainfile_array.append(line.strip())
     trainer.train(trainfile_array)
-      
+    print("Done. Deleting: " + trainfile)
+    os.remove(trainfile)
   with sqlite3.connect("./config/db.sqlite3") as db:
     cursor = db.cursor()
     cursor.execute('''SELECT COUNT(*) from STATEMENT ''')
@@ -130,8 +129,9 @@ def recreate_file(filename: str):
     fle.touch(exist_ok=True)  
 
 
-def populate_new_sentences(chatbot: ChatBot, count: int, word: str):
+def populate_new_sentences(chatbot: ChatBot, count: int, word: str, fromapi: bool):
   try:
+    out = ""
     filename = ''
     if word:
       filename = TMP_DIR + '/sentences_parsed.txt'
@@ -139,44 +139,46 @@ def populate_new_sentences(chatbot: ChatBot, count: int, word: str):
       filename = TMP_DIR + '/sentences.txt'
 
 
-    extract_sentences_from_chatbot(filename, word, False)
+    extract_sentences_from_chatbot(filename, word, False, chatbot)
+
+    
+    if fromapi:
+      out = out + "Processing...\n\n"
 
     i=0
-    out=""
     while(i < count): 
-      sent_num = i + 1;
-      out = out + "Processing n. " + str(sent_num) + "\n";
       markov = MarkoviPy(filename, random.randint(3, 4)).generate_sentence()
 
       with open(filename) as f:
         last = None
         for line in (line for line in f if line.rstrip('\n')):
           last = line
-
-
-      out = out + " - Sentence : " + last +"\n"
-
-      learn(last, markov, chatbot)
       
       with open(filename, 'a') as sentence_file:
-        towrite = "\n"
+        towrite = ""
         sanitized = markov.strip()
         if sanitized[-1] in string.punctuation:
-          out = out + " - Generated: " + sanitized +"\n"
+          if fromapi:
+            out = out + " - " + sanitized +"\n"
           towrite = towrite + sanitized
         else:
-          out = out  + " - Generated: " + sanitized +".\n"        
+          if fromapi:
+            out = out + " - " + sanitized +".\n"
           towrite = towrite + sanitized + "."
         sentence_file.write(towrite)
 
-      out = out + "\n\n"
+      learn(last, markov, chatbot)
       i=i+1
-    return out
+    if fromapi:
+      return out
   except Exception as e:
     exc_type, exc_obj, exc_tb = sys.exc_info()
     fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
     print(exc_type, fname, exc_tb.tb_lineno)
-    return "Error populating sentences!"
+    if fromapi:
+      return "Parola o frase non trovata nel database del bot."
+    else:
+      print("Error populating sentences!")
 
 def get_youtube_audio(link: str):
   try:
@@ -312,7 +314,7 @@ def get_random_date():
   date = fake.date_time_between(start_date=offset, end_date='now').strftime("%Y-%m-%d")
   return date
 
-def extract_sentences_from_chatbot(filename: str, word: str, distinct: bool):
+def extract_sentences_from_chatbot(filename: str, word: str, distinct: bool, chatbot: ChatBot):
   #globalsanit = ""
   try:
     sqliteConnection = sqlite3.connect('./config/db.sqlite3')
@@ -320,7 +322,7 @@ def extract_sentences_from_chatbot(filename: str, word: str, distinct: bool):
 
     sqlite_select_sentences_query = ""
     if distinct:
-      sqlite_select_sentences_query = """SELECT DISTINCT text FROM statement"""
+      sqlite_select_sentences_query = """SELECT DISTINCT text FROM statement ORDER BY text"""
     else:
       sqlite_select_sentences_query = """SELECT text FROM statement"""
 
@@ -328,6 +330,9 @@ def extract_sentences_from_chatbot(filename: str, word: str, distinct: bool):
 
     cursor.execute(sqlite_select_sentences_query, data)
     records = cursor.fetchall()
+
+    
+    records_len = len(records)-1
 
 
     try:
@@ -337,10 +342,9 @@ def extract_sentences_from_chatbot(filename: str, word: str, distinct: bool):
       
     globalsanit = ""
 
-    count = 1
+    count = 0
 
     with open(filename, 'a') as sentence_file:
-      records_len = len(records)-1
       for row in records:
         sentence = row[0]
         if (word is not None and word.lower() in sentence.lower()) or word is None:
@@ -349,14 +353,29 @@ def extract_sentences_from_chatbot(filename: str, word: str, distinct: bool):
             sanitized = sanitized + "."
           if records.index(row) != records_len:
             sanitized = sanitized + "\n"
-
-          #if distinct:
-          #  globalsanit = globalsanit + str(count) + ". "+ sanitized
-          #  count = count + 1
-
           sentence_file.write(sanitized)
+          count = count + 1
 
     cursor.close()
+    if not distinct:
+      lines = open(filename).readlines()
+      random.shuffle(lines)
+      open(filename, 'w').writelines(lines)
+    
+    #if count < 5 and word is not None and chatbot is not None:
+    #  extract_sentences_from_chatbot(TMP_DIR + '/sentences.txt', None, False, chatbot)
+    #  lines = open(TMP_DIR + '/sentences.txt').read().splitlines()
+    #  z=0
+    #  word_internal = word;
+    #  while(z<100):
+    #    myline = random.choice(lines)
+    #    sanitized = word_internal.strip()
+    #    if sanitized[-1] not in string.punctuation:
+    #      word_internal = word_internal + "."
+    #    learn(word_internal, myline, chatbot)  
+    #    learn(myline, word_internal, chatbot)
+    #    z = z + 1
+    #  extract_sentences_from_chatbot(filename, word, distinct, None)
   except Exception as e:
     exc_type, exc_obj, exc_tb = sys.exc_info()
     fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
