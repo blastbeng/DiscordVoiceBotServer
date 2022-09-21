@@ -15,6 +15,7 @@ import string
 from chatterbot import ChatBot
 from chatterbot.conversation import Statement
 from chatterbot.trainers import ListTrainer
+from custom_trainer import CustomTrainer
 from chatterbot.comparisons import LevenshteinDistance
 #from chatterbot.comparisons import SpacySimilarity
 #from chatterbot.comparisons import JaccardSimilarity
@@ -78,7 +79,7 @@ def clean_input(testo: str):
   else:
     return True
 
-def get_chatterbot(trainfile: str):
+def get_chatterbot(trainfile: str, train: bool):
   fle = Path('./config/db.sqlite3')
   fle.touch(exist_ok=True)
   f = open(fle)
@@ -109,6 +110,9 @@ def get_chatterbot(trainfile: str):
     trainer.train(trainfile_array)
     print("Done. Deleting: " + trainfile)
     os.remove(trainfile)
+  if train:
+    trainer = CustomTrainer(chatbot)
+    trainer.train()
   with sqlite3.connect("./config/db.sqlite3") as db:
     cursor = db.cursor()
     cursor.execute('''SELECT COUNT(*) from STATEMENT ''')

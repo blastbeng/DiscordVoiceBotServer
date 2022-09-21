@@ -42,7 +42,7 @@ def search(words: str):
     else:
         return get_image(r, words, 0, [])
 
-def get_image(r, words: str, count: 0, searched: []):
+def get_image(r, words: str, count: 0, searched):
 
     try:
 

@@ -48,8 +48,10 @@ RUN spacy download it_core_news_lg
 #USER root
 WORKDIR /app
 
-#COPY .env .
+#COPY .env 
+COPY data .
 COPY utils.py .
+COPY custom_trainer.py .
 COPY insults.py .
 COPY reddit.py .
 #COPY twitter.py .
