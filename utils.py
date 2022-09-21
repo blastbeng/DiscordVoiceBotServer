@@ -130,29 +130,47 @@ def recreate_file(filename: str):
 
 
 def populate_new_sentences(chatbot: ChatBot, count: int, word: str, fromapi: bool):
+  filename = ""
   try:
     out = ""
-    filename = ''
-    if word:
-      filename = TMP_DIR + '/sentences_parsed.txt'
-    else:
-      filename = TMP_DIR + '/sentences.txt'
+    #filename = ''
+    #if word:
+    #  filename = TMP_DIR + '/sentences_parsed.txt'
+    #else:
+    #filename = TMP_DIR + '/sentences.txt'
+
+    filename = TMP_DIR + '/' + get_random_string(24) + ".txt"
 
 
     extract_sentences_from_chatbot(filename, word, False, chatbot)
 
+    last = None
     
     if fromapi:
       out = out + "Processing...\n\n"
+
+    if word is not None:
+      with open(filename, 'a') as sentence_file:
+        towrite = ""
+        sanitized = word.strip()
+        if sanitized[-1] in string.punctuation:
+          if fromapi:
+            out = out + " - " + sanitized +"\n"
+          towrite = towrite + sanitized +"\n"
+        else:
+          if fromapi:
+            out = out + " - " + sanitized +".\n"
+          towrite = towrite + sanitized + ".\n"
+        sentence_file.write(towrite)
 
     i=0
     while(i < count): 
       markov = MarkoviPy(filename, random.randint(3, 4)).generate_sentence()
 
-      with open(filename) as f:
-        last = None
-        for line in (line for line in f if line.rstrip('\n')):
-          last = line
+      if last is None:
+        with open(filename) as f:
+          for line in (line for line in f if line.rstrip('\n')):
+            last = line
       
       with open(filename, 'a') as sentence_file:
         towrite = ""
@@ -168,6 +186,7 @@ def populate_new_sentences(chatbot: ChatBot, count: int, word: str, fromapi: boo
         sentence_file.write(towrite)
 
       learn(last, markov, chatbot)
+      last = markov
       i=i+1
     if fromapi:
       return out
@@ -176,9 +195,14 @@ def populate_new_sentences(chatbot: ChatBot, count: int, word: str, fromapi: boo
     fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
     print(exc_type, fname, exc_tb.tb_lineno)
     if fromapi:
-      return "Parola o frase non trovata nel database del bot."
+      return "Errore!"
     else:
       print("Error populating sentences!")
+  finally:
+    try:
+      os.remove(filename)
+    except OSError:
+      pass
 
 def get_youtube_audio(link: str):
   try:
@@ -347,14 +371,14 @@ def extract_sentences_from_chatbot(filename: str, word: str, distinct: bool, cha
     with open(filename, 'a') as sentence_file:
       for row in records:
         sentence = row[0]
-        if (word is not None and word.lower() in sentence.lower()) or word is None:
-          sanitized = sentence.strip()
-          if sanitized[-1] not in string.punctuation:
-            sanitized = sanitized + "."
-          if records.index(row) != records_len:
-            sanitized = sanitized + "\n"
-          sentence_file.write(sanitized)
-          count = count + 1
+        #if (word is not None and word.lower() in sentence.lower()) or word is None:
+        sanitized = sentence.strip()
+        if sanitized[-1] not in string.punctuation:
+          sanitized = sanitized + "."
+        if records.index(row) != records_len:
+          sanitized = sanitized + "\n"
+        sentence_file.write(sanitized)
+        count = count + 1
 
     cursor.close()
     if not distinct:
@@ -393,3 +417,9 @@ def check_sentences_file_exists():
   fle.touch(exist_ok=True)
   f = open(fle)
   f.close()
+
+def get_random_string(length):
+    # choose from all lowercase letter
+    letters = string.ascii_lowercase
+    result_str = ''.join(random.choice(letters) for i in range(length))
+    return result_str

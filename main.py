@@ -350,6 +350,11 @@ class UtilsPopulateSentencesParsedApi(Resource):
   def get (self, word: str):
     return get_response_str(utils.populate_new_sentences(chatbot, 5, word, True))
 
+@nsutils.route('/sentence/populate/api')
+class UtilsPopulateSentencesApi(Resource):
+  def get (self):
+    return get_response_str(utils.populate_new_sentences(chatbot, 5, None, True))
+
 if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
   previousMessages = {}
   chatbot = utils.get_chatterbot('./config/trainfile.txt')
