@@ -2,7 +2,9 @@ import os
 import io
 from chatterbot.trainers import Trainer
 from chatterbot.conversation import Statement
-from google_translate_py import Translator
+#from google_translate_py import Translator
+#from googletrans import Translator
+from translate import Translator
 from chatterbot import utils
 from chatterbot.exceptions import OptionalDependencyImportError
 
@@ -36,6 +38,8 @@ class CustomTrainer(Trainer):
         data_file_paths.append(os.getcwd()+"/data/italian/greetings.yml")
         data_file_paths.append(os.getcwd()+"/data/italian/health.yml")
 
+        translator = Translator(from_lang='en', to_lang="it")
+
         for corpus, categories, file_path in load_corpus(*data_file_paths):
 
             statements_to_create = []
@@ -53,17 +57,17 @@ class CustomTrainer(Trainer):
                 previous_statement_text = None
                 previous_statement_search_text = ''
 
-                for text in conversation:
+                for text_raw in conversation:
 
                     if "english" in file_path:
-                        converted=Translator().translate(text, source="en", target="it")
+                        text=translator.translate(text_raw)
                     else:
-                        converted=text
+                        text=text_raw
 
                     statement_search_text = self.chatbot.storage.tagger.get_text_index_string(text)
 
                     statement = Statement(
-                        text=converted,
+                        text=text,
                         search_text=statement_search_text,
                         in_response_to=previous_statement_text,
                         search_in_response_to=previous_statement_search_text,
