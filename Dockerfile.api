@@ -49,7 +49,7 @@ RUN spacy download it_core_news_lg
 WORKDIR /app
 
 #COPY .env 
-COPY data .
+COPY data data
 COPY utils.py .
 COPY custom_trainer.py .
 COPY insults.py .

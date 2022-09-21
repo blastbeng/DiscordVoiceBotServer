@@ -26,7 +26,6 @@ from io import BytesIO
 from pytube import YouTube
 from pytube import Search
 from pathlib import Path
-from google_translate_py import Translator
 from faker import Faker
 from markovipy import MarkoviPy
 from pathlib import Path
