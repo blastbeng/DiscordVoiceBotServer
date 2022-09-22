@@ -358,7 +358,7 @@ class UtilsPopulateSentencesApi(Resource):
 
 if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
   previousMessages = {}
-  chatbot = utils.get_chatterbot('./config/trainfile.txt', os.environ['TRAIN'] == "True")
+  chatbot = utils.get_chatterbot('./data/trainfile-it.txt', './data/trainfile-en.txt', os.environ['TRAIN'] == "True")
   utils.check_sentences_file_exists()
   utils.extract_sentences_from_chatbot('./config/sentences.txt', None, True, None)
   #twitter.create_empty_tables()

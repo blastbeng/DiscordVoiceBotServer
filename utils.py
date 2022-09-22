@@ -14,7 +14,7 @@ import datetime
 import string
 from chatterbot import ChatBot
 from chatterbot.conversation import Statement
-from chatterbot.trainers import ListTrainer
+from custom_trainer import TranslatedListTrainer
 from custom_trainer import CustomTrainer
 from chatterbot.comparisons import LevenshteinDistance
 #from chatterbot.comparisons import SpacySimilarity
@@ -35,6 +35,9 @@ from dotenv import load_dotenv
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
 TMP_DIR = os.environ.get("TMP_DIR")
+TRANSLATOR_PROVIDER = os.environ.get("TRANSLATOR_PROVIDER")
+TRANSLATOR_BASEURL = os.environ.get("TRANSLATOR_BASEURL")
+MYMEMORY_TRANSLATOR_EMAIL = os.environ.get("MYMEMORY_TRANSLATOR_EMAIL")
 
 fake = Faker()
 
@@ -78,7 +81,7 @@ def clean_input(testo: str):
   else:
     return True
 
-def get_chatterbot(trainfile: str, train: bool):
+def get_chatterbot(trainfile_it: str, trainfile_en: str, train: bool):
   fle = Path('./config/db.sqlite3')
   fle.touch(exist_ok=True)
   f = open(fle)
@@ -99,18 +102,10 @@ def get_chatterbot(trainfile: str, train: bool):
       ]
   )
 
-  if os.path.isfile(trainfile):
-    print("Loading: " + trainfile)
-    trainer = ListTrainer(chatbot)
-    trainfile_array = []
-    with open(trainfile) as file:
-        for line in file:
-            trainfile_array.append(line.strip())
-    trainer.train(trainfile_array)
-    print("Done. Deleting: " + trainfile)
-    os.remove(trainfile)
+  train_list(trainfile_it, "it", chatbot)
+  train_list(trainfile_en, "en", chatbot)
   if train:
-    trainer = CustomTrainer(chatbot)
+    trainer = CustomTrainer(chatbot, translator_provider=TRANSLATOR_PROVIDER, translator_baseurl=TRANSLATOR_BASEURL, translator_email=MYMEMORY_TRANSLATOR_EMAIL)
     trainer.train()
   with sqlite3.connect("./config/db.sqlite3") as db:
     cursor = db.cursor()
@@ -119,6 +114,19 @@ def get_chatterbot(trainfile: str, train: bool):
     if result == 0 :
       learn('ciao', 'ciao', chatbot)    
   return chatbot
+
+def train_list(trainfile: str, lang: str, chatbot: ChatBot):
+  if os.path.isfile(trainfile):
+    print("Loading: " + trainfile)
+    trainer = TranslatedListTrainer(chatbot, lang=lang, translator_provider=TRANSLATOR_PROVIDER, translator_baseurl=TRANSLATOR_BASEURL, translator_email=MYMEMORY_TRANSLATOR_EMAIL)
+    trainfile_array = []
+    with open(trainfile) as file:
+        for line in file:
+            trainfile_array.append(line.strip())
+    trainer.train(trainfile_array)
+    print("Done. Deleting: " + trainfile)
+    os.remove(trainfile)
+
 
 def learn(testo: str, risposta: str, chatbot: ChatBot):
   input_statement = Statement(text=testo)
@@ -384,10 +392,10 @@ def extract_sentences_from_chatbot(filename: str, word: str, distinct: bool, cha
         count = count + 1
 
     cursor.close()
-    if not distinct:
-      lines = open(filename).readlines()
-      random.shuffle(lines)
-      open(filename, 'w').writelines(lines)
+    #if not distinct:
+    #  lines = open(filename).readlines()
+    #  random.shuffle(lines)
+    #  open(filename, 'w').writelines(lines)
     
     #if count < 5 and word is not None and chatbot is not None:
     #  extract_sentences_from_chatbot(TMP_DIR + '/sentences.txt', None, False, chatbot)
