@@ -87,6 +87,11 @@ class CustomTrainer(Trainer):
 
                 for text_raw in conversation:
 
+                    
+                    self.logger.info(' Processing "{}"'.format(
+                        text_raw
+                    ))
+
                     if "english" in file_path:
                         text=self.translator.translate(text_raw)
                         converted_chars=converted_chars + len(text)
@@ -103,11 +108,6 @@ class CustomTrainer(Trainer):
                             search_in_response_to=previous_statement_search_text,
                             conversation='training'
                         )
-
-                        self.logger.info('Adding "{}" as a response to "{}"'.format(
-                            statement.text,
-                            previous_statement_text
-                        ))
 
                         statement.add_tags(*categories)
 
@@ -173,9 +173,13 @@ class TranslatedListTrainer(Trainer):
 
             if self.show_training_progress:
                 utils.print_progress_bar(
-                    'Translated List Trainer ',
+                    'Training ' + str(len(conversation)) + ' elements',
                     conversation_count + 1, len(conversation)
                 )
+
+            self.logger.info(' Processing "{}"'.format(
+                text_raw
+            ))
 
             if self.lang == "en":
                 text=self.translator.translate(text_raw)
@@ -197,11 +201,6 @@ class TranslatedListTrainer(Trainer):
                         conversation='training'
                     )
                 )
-
-            self.logger.info('Adding "{}" as a response to "{}"'.format(
-                statement.text,
-                previous_statement_text
-            ))
 
             previous_statement_text = statement.text
             previous_statement_search_text = statement_search_text

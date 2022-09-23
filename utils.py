@@ -51,6 +51,30 @@ class YoutubeVideo():
         self.title = None
         self.link = None
 
+class TrainJson():
+  def __init__(self, info, language, sentences):
+        self.info = info
+        self.language = language
+        self.sentences = sentences
+
+class BaseClass(object):
+    def __init__(self, classtype):
+        self._type = classtype
+
+def ClassFactory(name, argnames, BaseClass=BaseClass):
+    def __init__(self, **kwargs):
+        for key, value in kwargs.items():
+            # here, the argnames variable is the one passed to the
+            # ClassFactory call
+            if key not in argnames:
+                raise TypeError("Argument %s not valid for %s" 
+                    % (key, self.__class__.__name__))
+            setattr(self, key, value)
+        BaseClass.__init__(self, name[:-len("Class")])
+    newclass = type(name, (BaseClass,),{"__init__": __init__})
+    return newclass
+
+
 def wiki_summary(testo: str):
   try:
     definition = wikipedia.summary(testo, sentences=1, auto_suggest=True, redirect=True)
@@ -434,3 +458,79 @@ def get_random_string(length):
     letters = string.ascii_lowercase
     result_str = ''.join(random.choice(letters) for i in range(length))
     return result_str
+
+def train_json(json_req, chatbot: ChatBot):
+  try:
+    if not json_req:
+      print(empty_template_trainfile_json())
+    else:
+      content = json_req
+      trainer = TranslatedListTrainer(chatbot, lang=content['language'], translator_provider=TRANSLATOR_PROVIDER, translator_baseurl=TRANSLATOR_BASEURL, translator_email=MYMEMORY_TRANSLATOR_EMAIL)
+      i = 0
+      while(i < len(content['sentences'])):
+        trainarray=[]
+        j = 0
+        while (j < len(content['sentences'][i]["message"+str(i)])):
+          trainarray.append(content['sentences'][i]["message"+str(i)][j])
+          j = j + 1
+        
+        trainer.train(trainarray)
+        i = i + 1
+
+      print(TrainJson("Done.", content['language'], []).__dict__)
+  except Exception as e:
+    exc_type, exc_obj, exc_tb = sys.exc_info()
+    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+    print(exc_type, fname, exc_tb.tb_lineno)
+    print(empty_template_trainfile_json())
+
+def empty_template_trainfile_json():
+  trainJsonSentencesArray=[]
+
+  message0=[]
+  message0.append("Hello, How are you?")
+  message0.append("I am fine, thanks.")
+
+  Conversation0 = ClassFactory("ConversationClass", "message0")
+  conversation0 = Conversation0(message0=message0)
+
+  trainJsonSentencesArray.append(conversation0.__dict__)
+
+  message1=[]
+  message1.append("How was your day?")
+  message1.append("It was good, thanks.")
+
+  Conversation1 = ClassFactory("ConversationClass", "message1")
+  conversation1 = Conversation1(message1=message1)
+
+  trainJsonSentencesArray.append(conversation1.__dict__)
+
+  trainJson = TrainJson("Error! Please use this format.", "en", trainJsonSentencesArray)
+
+  return trainJson.__dict__
+
+def allowed_file(filename):
+    return '.' in filename and \
+           filename.rsplit('.', 1)[1].lower() in "txt"
+
+def train_txt(trainfile, chatbot: ChatBot, lang: str):
+  try:
+      print("Loading: " + trainfile)
+      trainer = TranslatedListTrainer(chatbot, lang=lang, translator_provider=TRANSLATOR_PROVIDER, translator_baseurl=TRANSLATOR_BASEURL, translator_email=MYMEMORY_TRANSLATOR_EMAIL)
+      trainfile_array = []
+      with open(trainfile) as file:
+          for line in file:
+              if line.split():
+                trainfile_array.append(line.strip())
+              else:
+                trainer.train(trainfile_array)
+                trainfile_array=[]
+      if len(trainfile_array) > 0:
+        trainer.train(trainfile_array)
+      print("Done. Deleting: " + trainfile)
+      os.remove(trainfile)
+  except Exception as e:
+    exc_type, exc_obj, exc_tb = sys.exc_info()
+    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+    print(exc_type, fname, exc_tb.tb_lineno)
+    print("Error! Please upload a trainfile.txt")

@@ -50,6 +50,7 @@ WORKDIR /app
 
 #COPY .env 
 COPY data data
+COPY templates templates
 COPY utils.py .
 COPY custom_trainer.py .
 COPY insults.py .

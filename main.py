@@ -8,19 +8,25 @@ import requests
 import json
 import threading
 import random
-from flask import Flask, request, send_file, Response, jsonify
+import sys
+from flask import Flask, request, send_file, Response, jsonify, render_template
 from flask_restx import Api, Resource, reqparse
 from flask_apscheduler import APScheduler
 from chatterbot.conversation import Statement
 from flask_caching import Cache
 from markovipy import MarkoviPy
-
+from pathlib import Path
+from os.path import join, dirname
+from dotenv import load_dotenv
 
 logging.basicConfig(level=logging.INFO)
 
 log = logging.getLogger('werkzeug')
 log.setLevel(logging.INFO)
 
+dotenv_path = join(dirname(__file__), '.env')
+load_dotenv(dotenv_path)
+TMP_DIR = os.environ.get("TMP_DIR")
 
 app = Flask(__name__)
 class Config:    
@@ -355,10 +361,44 @@ class UtilsPopulateSentencesParsedApi(Resource):
 class UtilsPopulateSentencesApi(Resource):
   def get (self):
     return get_response_str(utils.populate_new_sentences(chatbot, 5, None, True))
+	
+@nsutils.route('/upload/trainfile/json')
+class UtilsTrainFile(Resource):
+  def post (self):    
+    try:
+      threading.Timer(0, utils.train_json, args=[request.get_json(), chatbot]).start()
+      return get_response_str("Done. Watch the logs for errors.")
+    except Exception as e:
+      exc_type, exc_obj, exc_tb = sys.exc_info()
+      fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+      print(exc_type, fname, exc_tb.tb_lineno)
+      return utils.empty_template_trainfile_json()
+	
+@nsutils.route('/upload/trainfile/txt')
+class UtilsTrainFile(Resource):
+  def post (self):
+    try:
+      trf=request.files['trainfile']
+      if not trf and allowed_file(trf):
+        return get_response_str("Error! Please upload a trainfile.txt")
+      else:
+        trainfile=TMP_DIR + '/' + utils.get_random_string(24) + ".txt"
+        trf.save(trainfile)
+        threading.Timer(0, utils.train_txt, args=[trainfile, chatbot, request.form.get("language")]).start()
+        return get_response_str("Done. Watch the logs for errors.")
+    except Exception as e:
+      exc_type, exc_obj, exc_tb = sys.exc_info()
+      fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+      print(exc_type, fname, exc_tb.tb_lineno)
+      return get_response_str("Error! Please upload a trainfile.txt")
+
+@app.route('/upload')
+def upload_file():
+   return render_template('upload.html')
 
 if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
   previousMessages = {}
-  chatbot = utils.get_chatterbot('./data/trainfile-it.txt', './data/trainfile-en.txt', os.environ['TRAIN'] == "True")
+  chatbot = utils.get_chatterbot('./config/trainfile-it.txt', './config/trainfile-en.txt', os.environ['TRAIN'] == "True")
   utils.check_sentences_file_exists()
   utils.extract_sentences_from_chatbot('./config/sentences.txt', None, True, None)
   #twitter.create_empty_tables()
