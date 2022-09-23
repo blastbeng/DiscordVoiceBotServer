@@ -1,4 +1,4 @@
 #!/usr/bin/env bash
-cp /app/config/db.sqlite3 /app/config/db.sqlite3.bak
-cp /app/config/sentences.txt /app/config/sentences.txt.bak
+mkdir -p /app/config/backups/
+cp /app/config/*db.sqlite3 /app/config/backups/
 uwsgi --ini uwsgi.ini --enable-threads

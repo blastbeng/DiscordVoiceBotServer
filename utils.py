@@ -105,8 +105,11 @@ def clean_input(testo: str):
   else:
     return True
 
-def get_chatterbot(trainfile_it: str, trainfile_en: str, train: bool):
-  fle = Path('./config/db.sqlite3')
+def get_chatterbot(chatid: str, train: bool):
+
+  dbfile=chatid+"-db.sqlite3"
+
+  fle = Path('./config/'+dbfile)
   fle.touch(exist_ok=True)
   f = open(fle)
   f.close()
@@ -115,7 +118,7 @@ def get_chatterbot(trainfile_it: str, trainfile_en: str, train: bool):
   chatbot = ChatBot(
       'PezzenteCapo',
       storage_adapter='chatterbot.storage.SQLStorageAdapter',
-      database_uri='sqlite:///config/db.sqlite3',
+      database_uri='sqlite:///config/'+dbfile,
       statement_comparison_function = LevenshteinDistance,
       response_selection_method = get_most_frequent_response,
       logic_adapters=[
@@ -126,30 +129,16 @@ def get_chatterbot(trainfile_it: str, trainfile_en: str, train: bool):
       ]
   )
 
-  train_list(trainfile_it, "it", chatbot)
-  train_list(trainfile_en, "en", chatbot)
   if train:
     trainer = CustomTrainer(chatbot, translator_provider=TRANSLATOR_PROVIDER, translator_baseurl=TRANSLATOR_BASEURL, translator_email=MYMEMORY_TRANSLATOR_EMAIL)
     trainer.train()
-  with sqlite3.connect("./config/db.sqlite3") as db:
+  with sqlite3.connect("./config/"+dbfile) as db:
     cursor = db.cursor()
     cursor.execute('''SELECT COUNT(*) from STATEMENT ''')
     result=cursor.fetchall()
     if result == 0 :
       learn('ciao', 'ciao', chatbot)    
   return chatbot
-
-def train_list(trainfile: str, lang: str, chatbot: ChatBot):
-  if os.path.isfile(trainfile):
-    print("Loading: " + trainfile)
-    trainer = TranslatedListTrainer(chatbot, lang=lang, translator_provider=TRANSLATOR_PROVIDER, translator_baseurl=TRANSLATOR_BASEURL, translator_email=MYMEMORY_TRANSLATOR_EMAIL)
-    trainfile_array = []
-    with open(trainfile) as file:
-        for line in file:
-            trainfile_array.append(line.strip())
-    trainer.train(trainfile_array)
-    print("Done. Deleting: " + trainfile)
-    os.remove(trainfile)
 
 
 def learn(testo: str, risposta: str, chatbot: ChatBot):
@@ -164,7 +153,7 @@ def recreate_file(filename: str):
     fle.touch(exist_ok=True)  
 
 
-def populate_new_sentences(chatbot: ChatBot, count: int, word: str, fromapi: bool):
+def populate_new_sentences(chatbot: ChatBot, count: int, word: str, fromapi: bool, chatid: str):
   filename = ""
   try:
     out = ""
@@ -177,7 +166,7 @@ def populate_new_sentences(chatbot: ChatBot, count: int, word: str, fromapi: boo
     filename = TMP_DIR + '/' + get_random_string(24) + ".txt"
 
 
-    extract_sentences_from_chatbot(filename, word, False, chatbot)
+    extract_sentences_from_chatbot(filename, word, False, chatbot, chatid)
 
     last = None
     
@@ -373,10 +362,11 @@ def get_random_date():
   date = fake.date_time_between(start_date=offset, end_date='now').strftime("%Y-%m-%d")
   return date
 
-def extract_sentences_from_chatbot(filename: str, word: str, distinct: bool, chatbot: ChatBot):
+def extract_sentences_from_chatbot(filename: str, word: str, distinct: bool, chatbot: ChatBot, chatid: str):
   #globalsanit = ""
   try:
-    sqliteConnection = sqlite3.connect('./config/db.sqlite3')
+    dbfile=chatid+"-db.sqlite3"
+    sqliteConnection = sqlite3.connect('./config/'+dbfile)
     cursor = sqliteConnection.cursor()
 
     sqlite_select_sentences_query = ""
@@ -445,13 +435,6 @@ def extract_sentences_from_chatbot(filename: str, word: str, distinct: bool, cha
         sqliteConnection.close()
   #if distinct:
   #  return globalsanit
-
-
-def check_sentences_file_exists(): 
-  fle = Path('./config/sentences.txt')
-  fle.touch(exist_ok=True)
-  f = open(fle)
-  f.close()
 
 def get_random_string(length):
     # choose from all lowercase letter

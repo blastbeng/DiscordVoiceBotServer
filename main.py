@@ -48,6 +48,7 @@ nstext = api.namespace('chatbot_text', 'Accumulators Chatbot Text APIs')
 
 parserinsult = reqparse.RequestParser()
 parserinsult.add_argument("text", type=str)
+parserinsult.add_argument("chatid", type=str)
 
 def get_response_str(text: str):
     r = Response(response=text, status=200, mimetype="text/xml")
@@ -59,57 +60,57 @@ def get_response_json(text: str):
     r.headers["Content-Type"] = "application/json; charset=utf-8"
     return r
 
-@nstext.route('/repeat/<string:text>')
+@nstext.route('/repeat/<string:text>/<string:chatid>')
 class TextRepeatClass(Resource):
   @cache.cached(timeout=3000, query_string=True)
-  def get (self, text: str):
+  def get (self, text: str, chatid: str):
     return text
 
-@nstext.route('/repeat/learn/<string:text>')
+@nstext.route('/repeat/learn/<string:text>/<string:chatid>')
 class TextRepeatLearnClass(Resource):
   @cache.cached(timeout=3000, query_string=True)
-  def get (self, text: str):
-    #chatbot.get_response(text)
-    threading.Timer(0, chatbot.get_response, args=[text]).start()
+  def get (self, text: str, chatid: str):
+    #get_chatbot_by_id(chatid).get_response(text)
+    threading.Timer(0, get_chatbot_by_id(chatid).get_response, args=[text]).start()
     return get_response_str(text)
 
-@nstext.route('/repeat/learn/user/<string:user>/<string:text>')
+@nstext.route('/repeat/learn/user/<string:user>/<string:text>/<string:chatid>')
 class AudioRepeatLearnUserClass(Resource):
   @cache.cached(timeout=3000, query_string=True)
-  def get (self, user: str, text: str):
+  def get (self, user: str, text: str, chatid: str):
     if user in previousMessages:
-      utils.learn(previousMessages[user], text, chatbot)
+      utils.learn(previousMessages[user], text, get_chatbot_by_id(chatid))
     previousMessages[user] = text
     return send_file(utils.get_tts(text), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
-@nstext.route('/ask/<string:text>')
+@nstext.route('/ask/<string:text>/<string:chatid>')
 class TextAskClass(Resource):
-  def get (self, text: str):
-    return get_response_str(chatbot.get_response(text).text)
+  def get (self, text: str, chatid: str):
+    return get_response_str(get_chatbot_by_id(chatid).get_response(text).text)
 
-@nstext.route('/ask/user/<string:user>/<string:text>')
+@nstext.route('/ask/user/<string:user>/<string:text>/<string:chatid>')
 class TextAskUserClass(Resource):
-  def get (self, user: str, text: str):
+  def get (self, user: str, text: str, chatid: str):
     dolearn = False;
     if user not in previousMessages:
       dolearn=True
-    chatbot_response = chatbot.get_response(text, learn=dolearn).text
+    chatbot_response = get_chatbot_by_id(chatid).get_response(text, learn=dolearn).text
     if user in previousMessages:
-      utils.learn(previousMessages[user], text, chatbot)
+      utils.learn(previousMessages[user], text, get_chatbot_by_id(chatid))
     previousMessages[user] = chatbot_response
     return get_response_str(chatbot_response)
 
-@nstext.route('/search/<string:text>')
+@nstext.route('/search/<string:text>/<string:chatid>')
 class TextSearchClass(Resource):
   @cache.cached(timeout=3000, query_string=True)
-  def get (self, text: str):
+  def get (self, text: str, chatid: str):
     return get_response_str(utils.wiki_summary(text))
 
-@nstext.route('/learn/<string:text>/<string:response>')
+@nstext.route('/learn/<string:text>/<string:response>/<string:chatid>')
 class TextLearnClass(Resource):
   @cache.cached(timeout=10, query_string=True)
-  def get (self, text: str, response: str):
-    utils.learn(text, response, chatbot)
+  def get (self, text: str, response: str, chatid: str):
+    utils.learn(text, response, get_chatbot_by_id(chatid))
     return "Ho imparato: " + text + " => " + response
 
 @nstext.route('/insult')
@@ -117,8 +118,9 @@ class TextInsultClass(Resource):
   @api.expect(parserinsult)
   def get (self):
     sentence = insults.get_insults()
-    #chatbot.get_response(sentence)
-    threading.Timer(0, chatbot.get_response, args=[sentence]).start()
+    #get_chatbot_by_id(chatid).get_response(sentence)
+    chatid = request.args.get("chatid")
+    threading.Timer(0, get_chatbot_by_id(chatid).get_response, args=[sentence]).start()
     text = request.args.get("text")
     if text and text != '' and text != 'none':
       sentence = text + " " + sentence
@@ -139,43 +141,43 @@ class TextTournamentRegenClass(Resource):
 
 nsaudio = api.namespace('chatbot_audio', 'Accumulators Chatbot TTS audio APIs')
 
-@nsaudio.route('/repeat/<string:text>')
+@nsaudio.route('/repeat/<string:text>/<string:chatid>')
 class AudioRepeatClass(Resource):
   @cache.cached(timeout=3000, query_string=True)
-  def get (self, text: str):
+  def get (self, text: str, chatid: str):
     return send_file(utils.get_tts(text), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
-@nsaudio.route('/repeat/learn/<string:text>')
+@nsaudio.route('/repeat/learn/<string:text>/<string:chatid>')
 class AudioRepeatLearnClass(Resource):
   @cache.cached(timeout=3000, query_string=True)
-  def get (self, text: str):
-    #chatbot.get_response(text)
-    threading.Timer(0, chatbot.get_response, args=[text]).start()
+  def get (self, text: str, chatid: str):
+    #get_chatbot_by_id(chatid).get_response(text)
+    threading.Timer(0, get_chatbot_by_id(chatid).get_response, args=[text]).start()
     return send_file(utils.get_tts(text), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
-@nsaudio.route('/repeat/learn/user/<string:user>/<string:text>')
+@nsaudio.route('/repeat/learn/user/<string:user>/<string:text>/<string:chatid>')
 class AudioRepeatLearnUserClass(Resource):
   @cache.cached(timeout=3000, query_string=True)
-  def get (self, user: str, text: str):
+  def get (self, user: str, text: str, chatid: str):
     if user in previousMessages:
-      utils.learn(previousMessages[user], text, chatbot)
+      utils.learn(previousMessages[user], text, get_chatbot_by_id(chatid))
     previousMessages[user] = text
     return send_file(utils.get_tts(text), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
-@nsaudio.route('/ask/<string:text>')
+@nsaudio.route('/ask/<string:text>/<string:chatid>')
 class AudioAskClass(Resource):
-  def get (self, text: str):
-    return send_file(utils.get_tts(chatbot.get_response(text).text), attachment_filename='audio.wav', mimetype='audio/x-wav')
+  def get (self, text: str, chatid: str):
+    return send_file(utils.get_tts(get_chatbot_by_id(chatid).get_response(text).text), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
-@nsaudio.route('/ask/user/<string:user>/<string:text>')
+@nsaudio.route('/ask/user/<string:user>/<string:text>/<string:chatid>')
 class AudioAskUserClass(Resource):
-  def get (self, user: str, text: str):
+  def get (self, user: str, text: str, chatid: str):
     dolearn = False;
     if user not in previousMessages:
       dolearn=True
-    chatbot_response = chatbot.get_response(text, learn=dolearn).text
+    chatbot_response = get_chatbot_by_id(chatid).get_response(text, learn=dolearn).text
     if user in previousMessages:
-      utils.learn(previousMessages[user], text, chatbot)
+      utils.learn(previousMessages[user], text, get_chatbot_by_id(chatid))
     previousMessages[user] = chatbot_response
     return send_file(utils.get_tts(chatbot_response), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
@@ -190,12 +192,12 @@ class AudioAskUserClass(Resource):
 #    else:
 #      thread_wait = threading.Thread(target=thread_wait, args=(countdown,))
 #      thread_wait.start()
-#      return send_file(utils.get_tts(chatbot.get_response(text).text), attachment_filename='audio.wav', mimetype='audio/x-wav')
+#      return send_file(utils.get_tts(get_chatbot_by_id(chatid).get_response(text).text), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
-@nsaudio.route('/search/<string:text>')
+@nsaudio.route('/search/<string:text>/<string:chatid>')
 class AudioSearchClass(Resource):
   @cache.cached(timeout=10, query_string=True)
-  def get (self, text: str):
+  def get (self, text: str, chatid: str):
     return send_file(utils.get_tts(utils.wiki_summary(text)), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
 @nsaudio.route('/insult')
@@ -203,8 +205,9 @@ class AudioInsultClass(Resource):
   @api.expect(parserinsult)
   def get (self):
     sentence = insults.get_insults()
-    #chatbot.get_response(sentence)
-    threading.Timer(0, chatbot.get_response, args=[sentence]).start()
+    #get_chatbot_by_id(chatid).get_response(sentence)
+    chatid = request.args.get("chatid")
+    threading.Timer(0, get_chatbot_by_id(chatid).get_response, args=[sentence]).start()
     text = request.args.get("text")
     if text and text != '' and text != 'none':
       sentence = text + " " + sentence
@@ -293,7 +296,7 @@ nsimages = api.namespace('images', 'Accumulators Images APIs')
 @nsimages.route('/search/<string:words>')
 class AudioSearchClass(Resource):
   def get (self, words: str):
-    threading.Timer(0, chatbot.get_response, args=[words]).start()
+    #threading.Timer(0, get_chatbot_by_id(chatid).get_response, args=[words]).start()
     bytes_img, attachment_filename, mimetype = image.search(words)
     return send_file(bytes_img, attachment_filename=attachment_filename, mimetype=mimetype)
 
@@ -315,58 +318,47 @@ class AudioSearchClass(Resource):
 #  sched.add_job(twitter.scrape, 'interval', args=[tw_search,50], hours=2, id=tw_search)
 
 
-nswebhook = api.namespace('webhooks', 'Accumulators Webhooks APIs')
+#nswebhook = api.namespace('webhooks', 'Accumulators Webhooks APIs')
 
-@nswebhook.route('/test', methods=['POST'])
-class WebhookTest(Resource):
-  def webhook():
-    if request.method == 'POST':
-      print("Data received from Webhook is: ", request.json)
-    return "Webhook received!"
+#@nswebhook.route('/test', methods=['POST'])
+#class WebhookTest(Resource):
+#  def webhook():
+#    if request.method == 'POST':
+#      print("Data received from Webhook is: ", request.json)
+#    return "Webhook received!"
 
 
 
 nsutils = api.namespace('utils', 'AccumulatorsUtils APIs')
 
-@nsutils.route('/sentence/extract')
-class UtilsExtractSentences(Resource):
-  def get (self):
-    #return get_response_str(utils.extract_sentences_from_chatbot('./config/sentences.txt', None, True))
-    utils.extract_sentences_from_chatbot('./config/sentences.txt', None, True, None)
-    return send_file('./config/sentences.txt', attachment_filename='sentences.txt', mimetype='text/plain')
-
-@nsutils.route('/sentence/random')
-class UtilsRandomSentences(Resource):
-  def get (self):
-    return get_response_str(MarkoviPy('./config/sentences.txt', random.randint(2, 3)).generate_sentence())
-
-@nsutils.route('/sentence/populate/<int:count>')
+@nsutils.route('/sentence/populate/<int:count>/<string:chatid>')
 class UtilsPopulateSentences(Resource):
-  def get (self, count: int):
-    threading.Timer(0, utils.populate_new_sentences, args=[chatbot, count, None, False]).start()
+  def get (self, count: int, chatid: str):
+    threading.Timer(0, utils.populate_new_sentences, args=[get_chatbot_by_id(chatid), count, None, False]).start()
     return "Starting thread populate_new_sentences with parameters: " + str(count) + ", None. Watch the logs."
 
-@nsutils.route('/sentence/populate/parsed/<int:count>/<string:word>')
+@nsutils.route('/sentence/populate/parsed/<int:count>/<string:word>/<string:chatid>')
 class UtilsPopulateSentencesParsed(Resource):
-  def get (self, count: int, word: str):
-    threading.Timer(0, utils.populate_new_sentences, args=[chatbot, count, word, False]).start()
+  def get (self, count: int, word: str, chatid: str):
+    threading.Timer(0, utils.populate_new_sentences, args=[get_chatbot_by_id(chatid), count, word, False]).start()
     return "Starting thread populate_new_sentences with parameters: " + str(count) + ", " + word + ". Watch the logs."
 
-@nsutils.route('/sentence/populate/parsed/api/<string:word>')
+@nsutils.route('/sentence/populate/parsed/api/<string:word>/<string:chatid>')
 class UtilsPopulateSentencesParsedApi(Resource):
-  def get (self, word: str):
-    return get_response_str(utils.populate_new_sentences(chatbot, 5, word, True))
+  def get (self, word: str, chatid: str):
+    return get_response_str(utils.populate_new_sentences(get_chatbot_by_id(chatid), 5, word, True))
 
-@nsutils.route('/sentence/populate/api')
+@nsutils.route('/sentence/populate/api/<string:chatid>')
 class UtilsPopulateSentencesApi(Resource):
-  def get (self):
-    return get_response_str(utils.populate_new_sentences(chatbot, 5, None, True))
+  def get (self, chatid: str):
+    return get_response_str(utils.populate_new_sentences(get_chatbot_by_id(chatid), 5, None, True))
 	
 @nsutils.route('/upload/trainfile/json')
 class UtilsTrainFile(Resource):
   def post (self):    
     try:
-      threading.Timer(0, utils.train_json, args=[request.get_json(), chatbot]).start()
+      chatid = request.form.get("chatid")
+      threading.Timer(0, utils.train_json, args=[request.get_json(), get_chatbot_by_id(chatid)]).start()
       return get_response_str("Done. Watch the logs for errors.")
     except Exception as e:
       exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -378,13 +370,14 @@ class UtilsTrainFile(Resource):
 class UtilsTrainFile(Resource):
   def post (self):
     try:
+      chatid = request.form.get("chatid")
       trf=request.files['trainfile']
       if not trf and allowed_file(trf):
         return get_response_str("Error! Please upload a trainfile.txt")
       else:
         trainfile=TMP_DIR + '/' + utils.get_random_string(24) + ".txt"
         trf.save(trainfile)
-        threading.Timer(0, utils.train_txt, args=[trainfile, chatbot, request.form.get("language")]).start()
+        threading.Timer(0, utils.train_txt, args=[trainfile, get_chatbot_by_id(chatid), request.form.get("language")]).start()
         return get_response_str("Done. Watch the logs for errors.")
     except Exception as e:
       exc_type, exc_obj, exc_tb = sys.exc_info()
@@ -396,11 +389,15 @@ class UtilsTrainFile(Resource):
 def upload_file():
    return render_template('upload.html')
 
+def get_chatbot_by_id(chatid: str):
+  if chatid not in chatbots_dict:
+    chatbots_dict[chatid] = utils.get_chatterbot(chatid, os.environ['TRAIN'] == "True")
+  return chatbots_dict[chatid]
+
 if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
   previousMessages = {}
-  chatbot = utils.get_chatterbot('./config/trainfile-it.txt', './config/trainfile-en.txt', os.environ['TRAIN'] == "True")
-  utils.check_sentences_file_exists()
-  utils.extract_sentences_from_chatbot('./config/sentences.txt', None, True, None)
+  chatbots_dict = {}
+  #chatbot = utils.get_chatterbot(os.environ['TRAIN'] == "True")
   #twitter.create_empty_tables()
   tournament.create_empty_tables()
   cache.init_app(app)
@@ -413,13 +410,9 @@ if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
 def scrape_jokes():
   utils.scrape_jokes()
   
-@scheduler.task('interval', id='extract_sentences', hours=24, misfire_grace_time=900)
-def extract_sentences():
-  utils.extract_sentences_from_chatbot('./config/sentences.txt', None, True, None)
-  
-@scheduler.task('cron', id='populate_sentences', hour=4, minute=10, second=0, misfire_grace_time=900)
-def populate_sentences():
-  print(utils.populate_new_sentences(chatbot, 1000, None, False))
+#@scheduler.task('cron', id='populate_sentences', hour=4, minute=10, second=0, misfire_grace_time=900)
+#def populate_sentences():
+#  print(utils.populate_new_sentences(chatbot, 1000, None, False))
 
 if __name__ == '__main__':
   app.run()
