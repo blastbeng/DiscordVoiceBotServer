@@ -88,6 +88,11 @@ class TextAskClass(Resource):
   def get (self, text: str, chatid: str):
     return get_response_str(get_chatbot_by_id(chatid).get_response(text).text)
 
+@nstext.route('/ask/nolearn/<string:text>/<string:chatid>')
+class TextAskNoLearnClass(Resource):
+  def get (self, text: str, chatid: str):
+    return get_response_str(get_chatbot_by_id(chatid).get_response(text, learn=False).text)
+
 @nstext.route('/ask/user/<string:user>/<string:text>/<string:chatid>')
 class TextAskUserClass(Resource):
   def get (self, user: str, text: str, chatid: str):
@@ -120,7 +125,7 @@ class TextInsultClass(Resource):
     sentence = insults.get_insults()
     #get_chatbot_by_id(chatid).get_response(sentence)
     chatid = request.args.get("chatid")
-    threading.Timer(0, get_chatbot_by_id(chatid).get_response, args=[sentence]).start()
+    #threading.Timer(0, get_chatbot_by_id(chatid).get_response, args=[sentence]).start()
     text = request.args.get("text")
     if text and text != '' and text != 'none':
       sentence = text + " " + sentence
@@ -169,6 +174,11 @@ class AudioAskClass(Resource):
   def get (self, text: str, chatid: str):
     return send_file(utils.get_tts(get_chatbot_by_id(chatid).get_response(text).text), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
+@nsaudio.route('/ask/nolearn/<string:text>/<string:chatid>')
+class AudioAskClass(Resource):
+  def get (self, text: str, chatid: str):
+    return send_file(utils.get_tts(get_chatbot_by_id(chatid).get_response(text, learn=False).text), attachment_filename='audio.wav', mimetype='audio/x-wav')
+
 @nsaudio.route('/ask/user/<string:user>/<string:text>/<string:chatid>')
 class AudioAskUserClass(Resource):
   def get (self, user: str, text: str, chatid: str):
@@ -207,7 +217,7 @@ class AudioInsultClass(Resource):
     sentence = insults.get_insults()
     #get_chatbot_by_id(chatid).get_response(sentence)
     chatid = request.args.get("chatid")
-    threading.Timer(0, get_chatbot_by_id(chatid).get_response, args=[sentence]).start()
+    #threading.Timer(0, get_chatbot_by_id(chatid).get_response, args=[sentence]).start()
     text = request.args.get("text")
     if text and text != '' and text != 'none':
       sentence = text + " " + sentence
@@ -334,24 +344,29 @@ nsutils = api.namespace('utils', 'AccumulatorsUtils APIs')
 @nsutils.route('/sentence/populate/<int:count>/<string:chatid>')
 class UtilsPopulateSentences(Resource):
   def get (self, count: int, chatid: str):
-    threading.Timer(0, utils.populate_new_sentences, args=[get_chatbot_by_id(chatid), count, None, False]).start()
+    threading.Timer(0, utils.populate_new_sentences, args=[get_chatbot_by_id(chatid), count, None, False, chatid]).start()
     return "Starting thread populate_new_sentences with parameters: " + str(count) + ", None. Watch the logs."
 
 @nsutils.route('/sentence/populate/parsed/<int:count>/<string:word>/<string:chatid>')
 class UtilsPopulateSentencesParsed(Resource):
   def get (self, count: int, word: str, chatid: str):
-    threading.Timer(0, utils.populate_new_sentences, args=[get_chatbot_by_id(chatid), count, word, False]).start()
+    threading.Timer(0, utils.populate_new_sentences, args=[get_chatbot_by_id(chatid), count, word, False, chatid]).start()
     return "Starting thread populate_new_sentences with parameters: " + str(count) + ", " + word + ". Watch the logs."
 
 @nsutils.route('/sentence/populate/parsed/api/<string:word>/<string:chatid>')
 class UtilsPopulateSentencesParsedApi(Resource):
   def get (self, word: str, chatid: str):
-    return get_response_str(utils.populate_new_sentences(get_chatbot_by_id(chatid), 5, word, True))
+    return get_response_str(utils.populate_new_sentences(get_chatbot_by_id(chatid), 5, word, True, chatid))
 
 @nsutils.route('/sentence/populate/api/<string:chatid>')
 class UtilsPopulateSentencesApi(Resource):
   def get (self, chatid: str):
-    return get_response_str(utils.populate_new_sentences(get_chatbot_by_id(chatid), 5, None, True))
+    return get_response_str(utils.populate_new_sentences(get_chatbot_by_id(chatid), 5, None, True, chatid))
+
+@nsutils.route('/delete/bytext/<string:text>/<string:chatid>')
+class UtilsDeleteByText(Resource):
+  def get (self, text: str, chatid: str):
+    return get_response_str(utils.delete_by_text('./config/' + get_chatbot_by_id(chatid).storage.database_uri[17:], text))
 	
 @nsutils.route('/upload/trainfile/json')
 class UtilsTrainFile(Resource):
@@ -392,6 +407,18 @@ def upload_file():
 def get_chatbot_by_id(chatid: str):
   if chatid not in chatbots_dict:
     chatbots_dict[chatid] = utils.get_chatterbot(chatid, os.environ['TRAIN'] == "True")
+#    scheduler.add_job(
+#        func=utils.populate_new_sentences,
+#        trigger="cron",
+#        args=[chatbots_dict[chatid], 100, None, False, chatid],
+#        hour=4,
+#        minute=10,
+#        second=0,
+#        id="populate_sentences_chatid_"+chatid,
+#        name="populate_sentences_chatid_"+chatid,
+#        misfire_grace_time=900,
+#        replace_existing=True
+#    )
   return chatbots_dict[chatid]
 
 if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":

@@ -129,15 +129,15 @@ def get_chatterbot(chatid: str, train: bool):
       ]
   )
 
-  if train:
-    trainer = CustomTrainer(chatbot, translator_provider=TRANSLATOR_PROVIDER, translator_baseurl=TRANSLATOR_BASEURL, translator_email=MYMEMORY_TRANSLATOR_EMAIL)
-    trainer.train()
   with sqlite3.connect("./config/"+dbfile) as db:
     cursor = db.cursor()
     cursor.execute('''SELECT COUNT(*) from STATEMENT ''')
     result=cursor.fetchall()
     if result == 0 :
-      learn('ciao', 'ciao', chatbot)    
+      learn('ciao', 'ciao', chatbot)
+      if train:
+        trainer = CustomTrainer(chatbot, translator_provider=TRANSLATOR_PROVIDER, translator_baseurl=TRANSLATOR_BASEURL, translator_email=MYMEMORY_TRANSLATOR_EMAIL)
+        trainer.train()      
   return chatbot
 
 
@@ -517,3 +517,29 @@ def train_txt(trainfile, chatbot: ChatBot, lang: str):
     fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
     print(exc_type, fname, exc_tb.tb_lineno)
     print("Error! Please upload a trainfile.txt")
+
+def delete_by_text(dbpath: str, text: str):
+  try:
+    sqliteConnection = sqlite3.connect(dbpath)
+    cursor = sqliteConnection.cursor()
+
+    sqlite_delete_query = """DELETE FROM Statement 
+                          WHERE text like ?
+                          OR text like ?
+                          OR text = ?"""
+
+    data_tuple = (text+'%', 
+                  '%'+text, 
+                  text)
+
+    cursor.execute(sqlite_delete_query, data_tuple)
+    sqliteConnection.commit()
+    cursor.close()
+
+    return('Frasi con parola chiave "' + text + '" cancellate!')
+  except sqlite3.Error as error:
+    print("Failed to delete data from sqlite", error)
+    return("Errore!")
+  finally:
+    if sqliteConnection:
+        sqliteConnection.close()
