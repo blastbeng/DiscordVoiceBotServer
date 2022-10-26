@@ -554,18 +554,20 @@ def delete_by_text(dbpath: str, text: str):
     if sqliteConnection:
         sqliteConnection.close()
 
-def get_tts(text: str):
-  return get_tts_google(text)
-
-def get_tts_fakeyou(text: str):
+def get_tts(text: str, voice=None):
   try:
     filename = TMP_DIR + "/fakeyou.wav"
     fy.login(FAKEYOU_USER,FAKEYOU_PASS)
-    ijt = generate_ijt(fy, text, get_random_voice())
-    if ijt is not None:
-      out = get_wav_fy(fy,ijt, 1, filename)
-      if out is not None:
-        return out
+    if voice is None or voice == "null":
+      voice = get_random_voice()
+    elif voice != "google":
+      ijt = generate_ijt(fy, text, voice)
+      if ijt is not None:
+        out = get_wav_fy(fy,ijt, 1, filename)
+        if out is not None:
+          return out
+        else:
+          return get_tts_google(text)
       else:
         return get_tts_google(text)
     else:
@@ -575,6 +577,7 @@ def get_tts_fakeyou(text: str):
 
 def get_random_voice():
   voices = [ 
+    "google",
     "TM:5ggf3m5w2mhq", #gerry scotti
     "TM:22e5sxvt2dvk", #silvio berlusconi
     "TM:8bqjb9x51vz3", #papa francesco    
