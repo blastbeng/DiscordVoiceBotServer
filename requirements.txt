@@ -26,3 +26,4 @@ faker
 praw
 pyenchant
 markovipy
+fakeyou

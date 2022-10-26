@@ -12,6 +12,11 @@ import sys
 import os
 import datetime
 import string
+import fakeyou
+import time
+import wave
+import audioop
+from uuid import uuid4
 from chatterbot import ChatBot
 from chatterbot.conversation import Statement
 from custom_trainer import TranslatedListTrainer
@@ -31,6 +36,7 @@ from markovipy import MarkoviPy
 from pathlib import Path
 from os.path import join, dirname
 from dotenv import load_dotenv
+from fakeyou.objects import *
 
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
@@ -38,6 +44,10 @@ TMP_DIR = os.environ.get("TMP_DIR")
 TRANSLATOR_PROVIDER = os.environ.get("TRANSLATOR_PROVIDER")
 TRANSLATOR_BASEURL = os.environ.get("TRANSLATOR_BASEURL")
 MYMEMORY_TRANSLATOR_EMAIL = os.environ.get("MYMEMORY_TRANSLATOR_EMAIL")
+FAKEYOU_USER = os.environ.get("FAKEYOU_USER")
+FAKEYOU_PASS = os.environ.get("FAKEYOU_PASS")
+
+fy=fakeyou.FakeYou()
 
 fake = Faker()
 
@@ -90,7 +100,7 @@ def generate(filename: str):
           yield data
           data = fmp3.read(1024)
 
-def get_tts(text: str):    
+def get_tts_google(text: str):    
   tts = gTTS(text=text, lang="it", slow=False)
   fp = BytesIO()
   tts.write_to_fp(fp)
@@ -543,3 +553,72 @@ def delete_by_text(dbpath: str, text: str):
   finally:
     if sqliteConnection:
         sqliteConnection.close()
+
+def get_tts(text: str):
+  return get_tts_google(text)
+
+def get_tts_fakeyou(text: str):
+  try:
+    filename = TMP_DIR + "/fakeyou.wav"
+    fy.login(FAKEYOU_USER,FAKEYOU_PASS)
+    ijt = generate_ijt(fy, text, get_random_voice())
+    if ijt is not None:
+      out = get_wav_fy(fy,ijt, 1, filename)
+      if out is not None:
+        return out
+      else:
+        return get_tts_google(text)
+    else:
+      return get_tts_google(text)
+  except fakeyou.exception.InvalidCredentials:
+    return get_tts_google(text)
+
+def get_random_voice():
+  voices = [ 
+    "TM:5ggf3m5w2mhq", #gerry scotti
+    "TM:22e5sxvt2dvk", #silvio berlusconi
+    "TM:8bqjb9x51vz3", #papa francesco    
+    "TM:nk1h2vqxhzdc", #caparezza 
+    "TM:7r48p42sbqej", #maria de filippi
+    "TM:xd8srfb4v5w6"] #mario giordano
+  size = len(voices)
+  n = random.randint(0,size-1)
+  sentence = voices[n]
+  return sentence
+
+def generate_ijt(fy,text:str,ttsModelToken:str,filename:str="fakeyou.wav"):
+  if fy.v:
+    print("getting job token")
+  payload={"uuid_idempotency_token":str(uuid4()),"tts_model_token":ttsModelToken,"inference_text":text}
+  handler=fy.session.post(url=fy.baseurl+"tts/inference",data=json.dumps(payload))
+  if handler.status_code==200:
+    ijt=handler.json()["inference_job_token"]
+    return ijt
+  elif handler.status_code==400:
+    return None
+  elif handler.status_code==429:
+    return None
+
+
+def get_wav_fy(fy,ijt:str,cooldown:int,filename:str):
+  while True:
+    handler=fy.session.get(url=fy.baseurl+f"tts/job/{ijt}")
+    if handler.status_code==200:
+      hjson=handler.json()
+      wavo=wav(hjson)
+      if fy.v:
+        print("WAV STATUS :",wavo.status)
+      if wavo.status=="started":
+        continue
+      elif "pending" in wavo.status:
+        time.sleep(cooldown)
+        continue
+      elif "attempt_failed" in wavo.status:
+        None
+      elif "complete_success":
+        content=fy.session.get("https://storage.googleapis.com/vocodes-public"+wavo.maybePublicWavPath).content
+        fp = BytesIO(content)
+        fp.seek(0)
+        return fp
+    elif handler.status_code==429:
+      None

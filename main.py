@@ -172,12 +172,12 @@ class AudioRepeatLearnUserClass(Resource):
 @nsaudio.route('/ask/<string:text>/<string:chatid>')
 class AudioAskClass(Resource):
   def get (self, text: str, chatid: str):
-    return send_file(utils.get_tts(get_chatbot_by_id(chatid).get_response(text).text), attachment_filename='audio.wav', mimetype='audio/x-wav')
+    return send_file(utils.get_tts_fakeyou(get_chatbot_by_id(chatid).get_response(text).text), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
 @nsaudio.route('/ask/nolearn/<string:text>/<string:chatid>')
 class AudioAskClass(Resource):
   def get (self, text: str, chatid: str):
-    return send_file(utils.get_tts(get_chatbot_by_id(chatid).get_response(text, learn=False).text), attachment_filename='audio.wav', mimetype='audio/x-wav')
+    return send_file(utils.get_tts_fakeyou(get_chatbot_by_id(chatid).get_response(text, learn=False).text), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
 @nsaudio.route('/ask/user/<string:user>/<string:text>/<string:chatid>')
 class AudioAskUserClass(Resource):
@@ -189,7 +189,7 @@ class AudioAskUserClass(Resource):
     if user in previousMessages:
       utils.learn(previousMessages[user], text, get_chatbot_by_id(chatid))
     previousMessages[user] = chatbot_response
-    return send_file(utils.get_tts(chatbot_response), attachment_filename='audio.wav', mimetype='audio/x-wav')
+    return send_file(utils.get_tts_fakeyou(chatbot_response), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
 #def thread_wait(i):
 #    time.sleep(i)
