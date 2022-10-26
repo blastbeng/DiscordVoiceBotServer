@@ -578,12 +578,12 @@ def get_tts(text: str, voice=None):
 def get_random_voice():
   voices = [ 
     "google",
-    "TM:5ggf3m5w2mhq", #gerry scotti
-    "TM:22e5sxvt2dvk", #silvio berlusconi
-    "TM:8bqjb9x51vz3", #papa francesco    
     "TM:nk1h2vqxhzdc", #caparezza 
+    "TM:5ggf3m5w2mhq", #gerry scotti
     "TM:7r48p42sbqej", #maria de filippi
-    "TM:xd8srfb4v5w6"] #mario giordano
+    "TM:xd8srfb4v5w6", #mario giordano
+    "TM:8bqjb9x51vz3", #papa francesco    
+    "TM:22e5sxvt2dvk"] #silvio berlusconi
   size = len(voices)
   n = random.randint(0,size-1)
   sentence = voices[n]
