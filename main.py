@@ -208,7 +208,7 @@ class AudioAskUserClass(Resource):
 class AudioSearchClass(Resource):
   @cache.cached(timeout=10, query_string=True)
   def get (self, text: str, chatid: str):
-    return send_file(utils.get_tts(utils.wiki_summary(text)), attachment_filename='audio.wav', mimetype='audio/x-wav')
+    return send_file(utils.get_tts(utils.wiki_summary(text, voice="null")), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
 @nsaudio.route('/insult')
 class AudioInsultClass(Resource):
@@ -221,7 +221,7 @@ class AudioInsultClass(Resource):
     text = request.args.get("text")
     if text and text != '' and text != 'none':
       sentence = text + " " + sentence
-    return send_file(utils.get_tts(sentence), attachment_filename='audio.wav', mimetype='audio/x-wav')
+    return send_file(utils.get_tts(sentence, voice="null"), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
 
 nsmusic = api.namespace('chatbot_music', 'Accumulators Chatbot Music APIs')
@@ -276,20 +276,20 @@ class AudioChuckClass(Resource):
   def get(self):
     try:
       text = utils.get_joke("CHUCK_NORRIS")
-      tts = utils.get_tts(text)
+      tts = utils.get_tts(text, voice="null")
       return send_file(tts, attachment_filename='audio.wav', mimetype='audio/x-wav')
     except:
-      return send_file(utils.get_tts("Riprova tra qualche secondo..."), attachment_filename='audio.wav', mimetype='audio/x-wav')
+      return send_file(utils.get_tts("Riprova tra qualche secondo...", voice="null"), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
 @nsjokesaudio.route('/random')
 class AudioRandomJokeClass(Resource):
   def get(self):
     try:
       text = utils.get_joke("")
-      tts = utils.get_tts(text)
+      tts = utils.get_tts(text, voice="null")
       return send_file(tts, attachment_filename='audio.wav', mimetype='audio/x-wav')
     except:
-      return send_file(utils.get_tts("Riprova tra qualche secondo..."), attachment_filename='audio.wav', mimetype='audio/x-wav')
+      return send_file(utils.get_tts("Riprova tra qualche secondo...", voice="null"), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
 
 nswebtext = api.namespace('reddit', 'Accumulators Reddit APIs')

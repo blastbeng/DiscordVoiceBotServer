@@ -556,14 +556,15 @@ def delete_by_text(dbpath: str, text: str):
 
 def get_tts(text: str, voice=None):
   try:
-    filename = TMP_DIR + "/fakeyou.wav"
-    fy.login(FAKEYOU_USER,FAKEYOU_PASS)
     if voice is None or voice == "null":
-      voice = get_random_voice()
-    elif voice != "google":
-      ijt = generate_ijt(fy, text, voice)
+      voice_to_use = get_random_voice()
+    else:
+      voice_to_use = voice
+    if voice_to_use != "google":
+      fy.login(FAKEYOU_USER,FAKEYOU_PASS)
+      ijt = generate_ijt(fy, text, voice_to_use)
       if ijt is not None:
-        out = get_wav_fy(fy,ijt, 1, filename)
+        out = get_wav_fy(fy,ijt, 1)
         if out is not None:
           return out
         else:
@@ -589,7 +590,7 @@ def get_random_voice():
   sentence = voices[n]
   return sentence
 
-def generate_ijt(fy,text:str,ttsModelToken:str,filename:str="fakeyou.wav"):
+def generate_ijt(fy,text:str,ttsModelToken:str):
   if fy.v:
     print("getting job token")
   payload={"uuid_idempotency_token":str(uuid4()),"tts_model_token":ttsModelToken,"inference_text":text}
@@ -603,7 +604,7 @@ def generate_ijt(fy,text:str,ttsModelToken:str,filename:str="fakeyou.wav"):
     return None
 
 
-def get_wav_fy(fy,ijt:str,cooldown:int,filename:str):
+def get_wav_fy(fy,ijt:str,cooldown:int):
   while True:
     handler=fy.session.get(url=fy.baseurl+f"tts/job/{ijt}")
     if handler.status_code==200:
