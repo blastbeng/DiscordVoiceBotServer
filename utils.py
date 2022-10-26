@@ -562,9 +562,10 @@ def get_tts(text: str, voice=None):
       voice_to_use = voice
     if voice_to_use != "google":
       fy.login(FAKEYOU_USER,FAKEYOU_PASS)
-      ijt = generate_ijt(fy, text, voice_to_use)
+      newtext = text.translate(str.maketrans('', '', string.punctuation))
+      ijt = generate_ijt(fy, newtext, voice_to_use)
       if ijt is not None:
-        out = get_wav_fy(fy,ijt, 1)
+        out = get_wav_fy(fy,ijt)
         if out is not None:
           return out
         else:
@@ -604,7 +605,7 @@ def generate_ijt(fy,text:str,ttsModelToken:str):
     return None
 
 
-def get_wav_fy(fy,ijt:str,cooldown:int):
+def get_wav_fy(fy,ijt:str):
   while True:
     handler=fy.session.get(url=fy.baseurl+f"tts/job/{ijt}")
     if handler.status_code==200:
@@ -615,14 +616,14 @@ def get_wav_fy(fy,ijt:str,cooldown:int):
       if wavo.status=="started":
         continue
       elif "pending" in wavo.status:
-        time.sleep(cooldown)
+        time.sleep(2)
         continue
       elif "attempt_failed" in wavo.status:
-        None
+        return None
       elif "complete_success":
         content=fy.session.get("https://storage.googleapis.com/vocodes-public"+wavo.maybePublicWavPath).content
         fp = BytesIO(content)
         fp.seek(0)
         return fp
     elif handler.status_code==429:
-      None
+      return None
