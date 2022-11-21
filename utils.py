@@ -562,24 +562,23 @@ def get_tts(text: str, voice=None):
       voice_to_use = voice
     if voice_to_use != "google":
       fy.login(FAKEYOU_USER,FAKEYOU_PASS)
-      newtext = text.translate(str.maketrans('', '', string.punctuation))
-      ijt = generate_ijt(fy, newtext, voice_to_use)
+      #newtext = text.translate(str.maketrans('', '', string.punctuation))
+      ijt = generate_ijt(fy, text.strip(), voice_to_use)
       if ijt is not None:
         out = get_wav_fy(fy,ijt)
         if out is not None:
           return out
         else:
-          return get_tts_google(text)
+          return get_tts_google(text.strip())
       else:
-        return get_tts_google(text)
+        return get_tts_google(text.strip())
     else:
-      return get_tts_google(text)
+      return get_tts_google(text.strip())
   except fakeyou.exception.InvalidCredentials:
-    return get_tts_google(text)
+    return get_tts_google(text.strip())
 
 def get_random_voice():
   voices = [ 
-    "google",
     "TM:nk1h2vqxhzdc", #caparezza 
     "TM:5ggf3m5w2mhq", #gerry scotti
     "TM:7r48p42sbqej", #maria de filippi

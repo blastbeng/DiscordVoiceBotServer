@@ -19,13 +19,14 @@ from pathlib import Path
 from os.path import join, dirname
 from dotenv import load_dotenv
 
-logging.basicConfig(level=logging.INFO)
-
-log = logging.getLogger('werkzeug')
-log.setLevel(logging.INFO)
-
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
+
+logging.basicConfig(level=int(os.environ.get("LOG_LEVEL")))
+
+log = logging.getLogger('werkzeug')
+log.setLevel(int(os.environ.get("LOG_LEVEL")))
+
 TMP_DIR = os.environ.get("TMP_DIR")
 
 app = Flask(__name__)
@@ -175,7 +176,7 @@ class AudioAskClass(Resource):
     return send_file(utils.get_tts(get_chatbot_by_id(chatid).get_response(text).text), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
 @nsaudio.route('/ask/nolearn/<string:text>/<string:chatid>')
-class AudioAskClass(Resource):
+class AudioAskNoLeaRNClass(Resource):
   def get (self, text: str, chatid: str):
     return send_file(utils.get_tts(get_chatbot_by_id(chatid).get_response(text, learn=False).text), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
