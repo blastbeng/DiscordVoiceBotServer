@@ -1,7 +1,11 @@
-FROM nginx
+FROM ubuntu:22.04
+
+RUN apt-get update && \
+    DEBIAN_FRONTEND=noninteractive apt-get install -y nginx-full
 
 ENV NGINX_MAX_UPLOAD 0
 ENV NGINX_WORKER_PROCESSES 1
 
-RUN rm /etc/nginx/conf.d/default.conf
-COPY nginx/nginx.conf /etc/nginx/conf.d/default.conf
+COPY nginx/balancer /etc/nginx/sites-available/default
+
+CMD ["nginx", "-g", "daemon off;"]

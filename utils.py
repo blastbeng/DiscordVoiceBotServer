@@ -581,9 +581,11 @@ def get_random_voice():
   voices = [ 
     "TM:nk1h2vqxhzdc", #caparezza 
     "TM:5ggf3m5w2mhq", #gerry scotti
+    "TM:eb0rmkq6fxtj" #Goku
     "TM:7r48p42sbqej", #maria de filippi
-    "TM:xd8srfb4v5w6", #mario giordano
-    "TM:8bqjb9x51vz3", #papa francesco    
+    "TM:xd8srfb4v5w6", #mario giordano  
+    "TM:zdag8n18q9ct", #paolo bonolis   
+    "TM:8bqjb9x51vz3", #papa francesco               
     "TM:22e5sxvt2dvk"] #silvio berlusconi
   size = len(voices)
   n = random.randint(0,size-1)
