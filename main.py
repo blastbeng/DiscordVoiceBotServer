@@ -9,7 +9,7 @@ import json
 import threading
 import random
 import sys
-from flask import Flask, request, send_file, Response, jsonify, render_template
+from flask import Flask, request, send_file, Response, jsonify, render_template, make_response
 from flask_restx import Api, Resource, reqparse
 from flask_apscheduler import APScheduler
 from chatterbot.conversation import Statement
@@ -151,7 +151,12 @@ nsaudio = api.namespace('chatbot_audio', 'Accumulators Chatbot TTS audio APIs')
 class AudioRepeatClass(Resource):
   @cache.cached(timeout=3000, query_string=True)
   def get (self, text: str, chatid: str, voice: str):
-    return send_file(utils.get_tts(text, voice=voice), attachment_filename='audio.wav', mimetype='audio/x-wav')
+    tts_out = utils.get_tts(text, voice=voice)
+    if tts_out is not None:
+      return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
+    else:
+      resp = make_response("TTS Generation Error!", 500)
+      return resp
 
 @nsaudio.route('/repeat/learn/<string:text>/<string:chatid>/<string:voice>')
 class AudioRepeatLearnClass(Resource):
@@ -159,7 +164,12 @@ class AudioRepeatLearnClass(Resource):
   def get (self, text: str, chatid: str, voice: str):
     #get_chatbot_by_id(chatid).get_response(text)
     threading.Timer(0, get_chatbot_by_id(chatid).get_response, args=[text]).start()
-    return send_file(utils.get_tts(text, voice=voice), attachment_filename='audio.wav', mimetype='audio/x-wav')
+    tts_out = utils.get_tts(text, voice=voice)
+    if tts_out is not None:
+      return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
+    else:
+      resp = make_response("TTS Generation Error!", 500)
+      return resp
 
 @nsaudio.route('/repeat/learn/user/<string:user>/<string:text>/<string:chatid>/<string:voice>')
 class AudioRepeatLearnUserClass(Resource):
@@ -168,17 +178,33 @@ class AudioRepeatLearnUserClass(Resource):
     if user in previousMessages:
       utils.learn(previousMessages[user], text, get_chatbot_by_id(chatid))
     previousMessages[user] = text
-    return send_file(utils.get_tts(text, voice=voice), attachment_filename='audio.wav', mimetype='audio/x-wav')
+
+    tts_out = utils.get_tts(text, voice=voice)
+    if tts_out is not None:
+     return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
+    else:
+      resp = make_response("TTS Generation Error!", 500)
+      return resp
 
 @nsaudio.route('/ask/<string:text>/<string:chatid>')
 class AudioAskClass(Resource):
   def get (self, text: str, chatid: str):
-    return send_file(utils.get_tts(get_chatbot_by_id(chatid).get_response(text).text), attachment_filename='audio.wav', mimetype='audio/x-wav')
+    tts_out = utils.get_tts(get_chatbot_by_id(chatid).get_response(text).text)
+    if tts_out is not None:
+      return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
+    else:
+      resp = make_response("TTS Generation Error!", 500)
+      return resp
 
 @nsaudio.route('/ask/nolearn/<string:text>/<string:chatid>')
 class AudioAskNoLeaRNClass(Resource):
   def get (self, text: str, chatid: str):
-    return send_file(utils.get_tts(get_chatbot_by_id(chatid).get_response(text, learn=False).text), attachment_filename='audio.wav', mimetype='audio/x-wav')
+    tts_out = utils.get_tts(get_chatbot_by_id(chatid).get_response(text, learn=False).text)
+    if tts_out is not None:
+      return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
+    else:
+      resp = make_response("TTS Generation Error!", 500)
+      return resp
 
 @nsaudio.route('/ask/user/<string:user>/<string:text>/<string:chatid>')
 class AudioAskUserClass(Resource):
@@ -190,7 +216,13 @@ class AudioAskUserClass(Resource):
     if user in previousMessages:
       utils.learn(previousMessages[user], text, get_chatbot_by_id(chatid))
     previousMessages[user] = chatbot_response
-    return send_file(utils.get_tts(chatbot_response), attachment_filename='audio.wav', mimetype='audio/x-wav')
+
+    tts_out = utils.get_tts(chatbot_response)
+    if tts_out is not None:
+      return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
+    else:
+      resp = make_response("TTS Generation Error!", 500)
+      return resp
 
 #def thread_wait(i):
 #    time.sleep(i)
@@ -209,7 +241,12 @@ class AudioAskUserClass(Resource):
 class AudioSearchClass(Resource):
   @cache.cached(timeout=10, query_string=True)
   def get (self, text: str, chatid: str):
-    return send_file(utils.get_tts(utils.wiki_summary(text, voice="null")), attachment_filename='audio.wav', mimetype='audio/x-wav')
+    tts_out = utils.get_tts(utils.wiki_summary(text, voice="null"))
+    if tts_out is not None:
+      return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
+    else:
+      resp = make_response("TTS Generation Error!", 500)
+      return resp
 
 @nsaudio.route('/insult')
 class AudioInsultClass(Resource):
@@ -222,7 +259,12 @@ class AudioInsultClass(Resource):
     text = request.args.get("text")
     if text and text != '' and text != 'none':
       sentence = text + " " + sentence
-    return send_file(utils.get_tts(sentence, voice="null"), attachment_filename='audio.wav', mimetype='audio/x-wav')
+      tts_out = utils.get_tts(sentence, voice="null")
+    if tts_out is not None:
+     return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
+    else:
+      resp = make_response("TTS Generation Error!", 500)
+      return resp
 
 
 nsmusic = api.namespace('chatbot_music', 'Accumulators Chatbot Music APIs')
@@ -277,20 +319,30 @@ class AudioChuckClass(Resource):
   def get(self):
     try:
       text = utils.get_joke("CHUCK_NORRIS")
-      tts = utils.get_tts(text, voice="null")
-      return send_file(tts, attachment_filename='audio.wav', mimetype='audio/x-wav')
+      tts_out = utils.get_tts(text, voice="null")
+      if tts_out is not None:
+        return send_file(tts, attachment_filename='audio.wav', mimetype='audio/x-wav')
+      else:
+        resp = make_response("TTS Generation Error!", 500)
+        return resp
     except:
-      return send_file(utils.get_tts("Riprova tra qualche secondo...", voice="null"), attachment_filename='audio.wav', mimetype='audio/x-wav')
+      resp = make_response("TTS Generation Error!", 500)
+      return resp
 
 @nsjokesaudio.route('/random')
 class AudioRandomJokeClass(Resource):
   def get(self):
     try:
       text = utils.get_joke("")
-      tts = utils.get_tts(text, voice="null")
-      return send_file(tts, attachment_filename='audio.wav', mimetype='audio/x-wav')
+      tts_out = utils.get_tts(text, voice="null")
+      if tts_out is not None:
+        return send_file(tts, attachment_filename='audio.wav', mimetype='audio/x-wav')
+      else:
+        resp = make_response("TTS Generation Error!", 500)
+        return resp
     except:
-      return send_file(utils.get_tts("Riprova tra qualche secondo...", voice="null"), attachment_filename='audio.wav', mimetype='audio/x-wav')
+      resp = make_response("TTS Generation Error!", 500)
+      return resp
 
 
 nswebtext = api.namespace('reddit', 'Accumulators Reddit APIs')
@@ -401,6 +453,11 @@ class UtilsTrainFile(Resource):
       print(exc_type, fname, exc_tb.tb_lineno)
       return get_response_str("Error! Please upload a trainfile.txt")
 
+@nsutils.route('/fakeyou/get_voices_by_cat/<string:category>')
+class FakeYouGetVoicesByCatClass(Resource):
+  def get(self, category: str):
+    return jsonify(utils.get_fakeyou_voices(category))
+
 @app.route('/upload')
 def upload_file():
    return render_template('upload.html')
@@ -437,6 +494,10 @@ if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
 @scheduler.task('interval', id='scrape_jokes', hours=72, misfire_grace_time=900)
 def scrape_jokes():
   utils.scrape_jokes()
+  
+@scheduler.task('interval', id='login_fakeyou', hours=12, misfire_grace_time=900)
+def scrape_jokes():
+  utils.login_fakeyou()
   
 #@scheduler.task('cron', id='populate_sentences', hour=4, minute=10, second=0, misfire_grace_time=900)
 #def populate_sentences():

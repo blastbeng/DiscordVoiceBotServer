@@ -2,17 +2,15 @@
 upstream loadbalancer {
     server unix:/tmp/scemo-pezzente-api/scemo-pezzente-1.sock;
     server unix:/tmp/scemo-pezzente-api/scemo-pezzente-2.sock;
-    server unix:/tmp/scemo-pezzente-api/scemo-pezzente-3.sock;
-    server unix:/tmp/scemo-pezzente-api/scemo-pezzente-4.sock;
 }
 server {
     location / {
         include uwsgi_params;
         uwsgi_ignore_client_abort on;
-        proxy_read_timeout 3600;
-        uwsgi_connect_timeout 3000;
-        uwsgi_read_timeout 3000;
-        uwsgi_send_timeout 3000;
+        proxy_read_timeout 300;
+        uwsgi_connect_timeout 300;
+        uwsgi_read_timeout 300;
+        uwsgi_send_timeout 300;
         uwsgi_pass loadbalancer;
     }
 }

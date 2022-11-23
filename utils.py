@@ -37,6 +37,7 @@ from pathlib import Path
 from os.path import join, dirname
 from dotenv import load_dotenv
 from fakeyou.objects import *
+from sqlitedict import SqliteDict
 
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)
@@ -48,6 +49,7 @@ FAKEYOU_USER = os.environ.get("FAKEYOU_USER")
 FAKEYOU_PASS = os.environ.get("FAKEYOU_PASS")
 
 fy=fakeyou.FakeYou()
+fy.login(FAKEYOU_USER,FAKEYOU_PASS)
 
 fake = Faker()
 
@@ -55,6 +57,7 @@ EXCEPTION_WIKIPEDIA = 'Non ho trovato risultati per: '
 EXCEPTION_YOUTUBE_AUDIO = 'Errore nella riproduzione da Youtube.'
 
 wikipedia.set_lang("it")
+
 
 class YoutubeVideo():
     def __init__(self):
@@ -561,36 +564,47 @@ def get_tts(text: str, voice=None):
     else:
       voice_to_use = voice
     if voice_to_use != "google":
-      fy.login(FAKEYOU_USER,FAKEYOU_PASS)
-      #newtext = text.translate(str.maketrans('', '', string.punctuation))
       ijt = generate_ijt(fy, text.strip(), voice_to_use)
       if ijt is not None:
         out = get_wav_fy(fy,ijt)
         if out is not None:
           return out
         else:
-          return get_tts_google(text.strip())
+          #return get_tts_google(text.strip())
+          return None
       else:
-        return get_tts_google(text.strip())
+        #return get_tts_google(text.strip())
+        return None
     else:
       return get_tts_google(text.strip())
-  except fakeyou.exception.InvalidCredentials:
-    return get_tts_google(text.strip())
+  except:
+    #fy.login(FAKEYOU_USER,FAKEYOU_PASS)
+    #return get_tts_google(text.strip())
+    return None
 
 def get_random_voice():
-  voices = [ 
-    "TM:nk1h2vqxhzdc", #caparezza 
-    "TM:5ggf3m5w2mhq", #gerry scotti
-    "TM:eb0rmkq6fxtj" #Goku
-    "TM:7r48p42sbqej", #maria de filippi
-    "TM:xd8srfb4v5w6", #mario giordano  
-    "TM:zdag8n18q9ct", #paolo bonolis   
-    "TM:8bqjb9x51vz3", #papa francesco               
-    "TM:22e5sxvt2dvk"] #silvio berlusconi
-  size = len(voices)
-  n = random.randint(0,size-1)
-  sentence = voices[n]
-  return sentence
+  localvoices = get_fakeyou_voices("Italiano")
+  title, token = random.choice(list(localvoices.items()))
+  return token
+
+def get_fakeyou_voices(category: str):
+  #fy.login(FAKEYOU_USER,FAKEYOU_PASS)
+  db = SqliteDict(TMP_DIR+"/fakeyou_voices.sqlite")
+  localvoices = {}
+  if len(db) > 0:
+    for key, item in db.items():
+      localvoices[key] = item
+    return localvoices
+  else:
+    result=fy.search(category)
+    for name,token in zip(result.categories.name,result.categories.categoryToken):
+      result_voices = fy.get_voices_by_category(token)
+      for title,token in zip(result_voices.title,result_voices.modelTokens):
+        localvoices[title] = token
+        db[title] = token
+        db.commit()
+    return localvoices
+  db.close()
 
 def generate_ijt(fy,text:str,ttsModelToken:str):
   if fy.v:
@@ -628,3 +642,6 @@ def get_wav_fy(fy,ijt:str):
         return fp
     elif handler.status_code==429:
       return None
+
+def login_fakeyou():
+  fy.login(FAKEYOU_USER,FAKEYOU_PASS)

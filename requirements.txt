@@ -27,3 +27,4 @@ praw
 pyenchant
 markovipy
 fakeyou
+sqlitedict

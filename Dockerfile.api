@@ -49,7 +49,7 @@ RUN spacy download it_core_news_lg
 WORKDIR /app
 
 ENV UWSGI_CHEAPER 0
-ENV UWSGI_PROCESSES 4
+ENV UWSGI_PROCESSES 2
 #COPY .env 
 COPY data data
 COPY templates templates
