@@ -63,13 +63,13 @@ def get_response_json(text: str):
 
 @nstext.route('/repeat/<string:text>/<string:chatid>')
 class TextRepeatClass(Resource):
-  @cache.cached(timeout=3000, query_string=True)
+  @cache.cached(timeout=7200, query_string=True)
   def get (self, text: str, chatid: str):
     return text
 
 @nstext.route('/repeat/learn/<string:text>/<string:chatid>')
 class TextRepeatLearnClass(Resource):
-  @cache.cached(timeout=3000, query_string=True)
+  @cache.cached(timeout=7200, query_string=True)
   def get (self, text: str, chatid: str):
     #get_chatbot_by_id(chatid).get_response(text)
     threading.Timer(0, get_chatbot_by_id(chatid).get_response, args=[text]).start()
@@ -77,7 +77,7 @@ class TextRepeatLearnClass(Resource):
 
 @nstext.route('/repeat/learn/user/<string:user>/<string:text>/<string:chatid>')
 class AudioRepeatLearnUserClass(Resource):
-  @cache.cached(timeout=3000, query_string=True)
+  @cache.cached(timeout=7200, query_string=True)
   def get (self, user: str, text: str, chatid: str):
     if user in previousMessages:
       utils.learn(previousMessages[user], text, get_chatbot_by_id(chatid))
@@ -108,7 +108,7 @@ class TextAskUserClass(Resource):
 
 @nstext.route('/search/<string:text>/<string:chatid>')
 class TextSearchClass(Resource):
-  @cache.cached(timeout=3000, query_string=True)
+  @cache.cached(timeout=7200, query_string=True)
   def get (self, text: str, chatid: str):
     return get_response_str(utils.wiki_summary(text))
 
@@ -149,7 +149,7 @@ nsaudio = api.namespace('chatbot_audio', 'Accumulators Chatbot TTS audio APIs')
 
 @nsaudio.route('/repeat/<string:text>/<string:chatid>/<string:voice>')
 class AudioRepeatClass(Resource):
-  @cache.cached(timeout=3000, query_string=True)
+  @cache.cached(timeout=7200, query_string=True)
   def get (self, text: str, chatid: str, voice: str):
     tts_out = utils.get_tts(text, voice=voice)
     if tts_out is not None:
@@ -160,7 +160,7 @@ class AudioRepeatClass(Resource):
 
 @nsaudio.route('/repeat/learn/<string:text>/<string:chatid>/<string:voice>')
 class AudioRepeatLearnClass(Resource):
-  @cache.cached(timeout=3000, query_string=True)
+  @cache.cached(timeout=7200, query_string=True)
   def get (self, text: str, chatid: str, voice: str):
     #get_chatbot_by_id(chatid).get_response(text)
     threading.Timer(0, get_chatbot_by_id(chatid).get_response, args=[text]).start()
@@ -173,7 +173,7 @@ class AudioRepeatLearnClass(Resource):
 
 @nsaudio.route('/repeat/learn/user/<string:user>/<string:text>/<string:chatid>/<string:voice>')
 class AudioRepeatLearnUserClass(Resource):
-  @cache.cached(timeout=3000, query_string=True)
+  @cache.cached(timeout=7200, query_string=True)
   def get (self, user: str, text: str, chatid: str, voice: str):
     if user in previousMessages:
       utils.learn(previousMessages[user], text, get_chatbot_by_id(chatid))

@@ -1,8 +1,10 @@
-import sys
 import os
-from pathlib import Path
-from os.path import join, dirname
+import sys
+
 from dotenv import load_dotenv
+from os.path import dirname
+from os.path import join
+from pathlib import Path
 
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)

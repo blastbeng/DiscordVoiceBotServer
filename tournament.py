@@ -1,11 +1,13 @@
+import os
 import random
 import sqlite3
-import os
+
 from decimal import Decimal
-from itertools import combinations
-from pathlib import Path
-from os.path import join, dirname
 from dotenv import load_dotenv
+from itertools import combinations
+from os.path import dirname
+from os.path import join
+from pathlib import Path
 
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)

@@ -1,13 +1,15 @@
-import os
-import sys
-import requests
 import enchant
-from random import choice
-from io import BytesIO
-from pathlib import Path
-from os.path import join, dirname
+import os
+import requests
+import sys
+
 from dotenv import load_dotenv
 from flask import send_file
+from io import BytesIO
+from os.path import dirname
+from os.path import join
+from pathlib import Path
+from random import choice
 
 dotenv_path = join(dirname(__file__), '.env')
 load_dotenv(dotenv_path)

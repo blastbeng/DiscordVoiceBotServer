@@ -51,6 +51,12 @@ FAKEYOU_PASS = os.environ.get("FAKEYOU_PASS")
 fy=fakeyou.FakeYou()
 fy.login(FAKEYOU_USER,FAKEYOU_PASS)
 
+try:
+  if os.path.exists(TMP_DIR+"/fakeyou_voices.sqlite"):
+    os.remove(TMP_DIR+"/fakeyou_voices.sqlite")
+except:
+  print("Error removing fakeyou_voices.sqlite")
+
 fake = Faker()
 
 EXCEPTION_WIKIPEDIA = 'Non ho trovato risultati per: '

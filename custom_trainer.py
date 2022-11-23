@@ -1,14 +1,15 @@
-import os
 import io
-import random
 import logging
-from chatterbot.trainers import Trainer
+import os
+import random
+
 from chatterbot.conversation import Statement
+from chatterbot.trainers import Trainer
 #from google_translate_py import Translator
 #from googletrans import Translator
-from translate import Translator
 from chatterbot import utils
 from chatterbot.exceptions import OptionalDependencyImportError
+from translate import Translator
 
 
 class CustomTrainer(Trainer):
