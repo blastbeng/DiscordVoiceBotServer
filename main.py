@@ -44,7 +44,6 @@ class Config:
 scheduler = APScheduler()
 
 limiter = Limiter(
-    app,
     key_func=get_remote_address,
     default_limits=["4/minute"],
     storage_uri="memory://",
@@ -77,7 +76,7 @@ class TextRepeatClass(Resource):
   def get (self, text: str, chatid: str):
     return text
 
-@limiter.limit("4/minute")
+
 @nstext.route('/repeat/learn/<string:text>/<string:chatid>')
 class TextRepeatLearnClass(Resource):
   @cache.cached(timeout=30, query_string=True)
@@ -86,7 +85,7 @@ class TextRepeatLearnClass(Resource):
     threading.Timer(0, get_chatbot_by_id(chatid).get_response, args=[text]).start()
     return get_response_str(text)
 
-@limiter.limit("4/minute")
+
 @nstext.route('/repeat/learn/user/<string:user>/<string:text>/<string:chatid>')
 class AudioRepeatLearnUserClass(Resource):
   @cache.cached(timeout=30, query_string=True)
@@ -96,19 +95,19 @@ class AudioRepeatLearnUserClass(Resource):
     previousMessages[user] = text
     return send_file(utils.get_tts(text), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
-@limiter.limit("4/minute")
+
 @nstext.route('/ask/<string:text>/<string:chatid>')
 class TextAskClass(Resource):
   def get (self, text: str, chatid: str):
     return get_response_str(get_chatbot_by_id(chatid).get_response(text).text)
 
-@limiter.limit("4/minute")
+
 @nstext.route('/ask/nolearn/<string:text>/<string:chatid>')
 class TextAskNoLearnClass(Resource):
   def get (self, text: str, chatid: str):
     return get_response_str(get_chatbot_by_id(chatid).get_response(text, learn=False).text)
 
-@limiter.limit("4/minute")
+
 @nstext.route('/ask/user/<string:user>/<string:text>/<string:chatid>')
 class TextAskUserClass(Resource):
   def get (self, user: str, text: str, chatid: str):
@@ -121,14 +120,14 @@ class TextAskUserClass(Resource):
     previousMessages[user] = chatbot_response
     return get_response_str(chatbot_response)
 
-@limiter.limit("4/minute")
+
 @nstext.route('/search/<string:text>/<string:chatid>')
 class TextSearchClass(Resource):
   @cache.cached(timeout=30, query_string=True)
   def get (self, text: str, chatid: str):
     return get_response_str(utils.wiki_summary(text))
 
-@limiter.limit("4/minute")
+
 @nstext.route('/learn/<string:text>/<string:response>/<string:chatid>')
 class TextLearnClass(Resource):
   @cache.cached(timeout=10, query_string=True)
@@ -136,7 +135,7 @@ class TextLearnClass(Resource):
     utils.learn(text, response, get_chatbot_by_id(chatid))
     return "Ho imparato: " + text + " => " + response
 
-@limiter.limit("4/minute")
+
 @nstext.route('/insult')
 class TextInsultClass(Resource):
   @api.expect(parserinsult)
@@ -151,7 +150,7 @@ class TextInsultClass(Resource):
     return sentence
 
 
-@limiter.limit("4/minute")
+
 @nstext.route('/tournament')
 class TextTournamentClass(Resource): 
   def post (self):
@@ -166,7 +165,7 @@ class TextTournamentRegenClass(Resource):
 
 nsaudio = api.namespace('chatbot_audio', 'Accumulators Chatbot TTS audio APIs')
 
-@limiter.limit("4/minute")
+
 @nsaudio.route('/repeat/<string:text>/<string:chatid>/<string:voice>')
 class AudioRepeatClass(Resource):
   @cache.cached(timeout=30, query_string=True)
@@ -181,7 +180,7 @@ class AudioRepeatClass(Resource):
     except Exception as e:
       return make_response(str(e), 500)
 
-@limiter.limit("4/minute")
+
 @nsaudio.route('/repeat/learn/<string:text>/<string:chatid>/<string:voice>')
 class AudioRepeatLearnClass(Resource):
   @cache.cached(timeout=30, query_string=True)
@@ -198,7 +197,7 @@ class AudioRepeatLearnClass(Resource):
     except Exception as e:
       return make_response(str(e), 500)
 
-@limiter.limit("4/minute")
+
 @nsaudio.route('/repeat/learn/user/<string:user>/<string:text>/<string:chatid>/<string:voice>')
 class AudioRepeatLearnUserClass(Resource):
   @cache.cached(timeout=30, query_string=True)
@@ -216,7 +215,7 @@ class AudioRepeatLearnUserClass(Resource):
     except Exception as e:
       return make_response(str(e), 500)
 
-@limiter.limit("4/minute")
+
 @nsaudio.route('/ask/<string:text>/<string:chatid>')
 class AudioAskClass(Resource):
   def get (self, text: str, chatid: str):
@@ -230,7 +229,7 @@ class AudioAskClass(Resource):
     except Exception as e:
       return make_response(str(e), 500)
 
-@limiter.limit("4/minute")
+
 @nsaudio.route('/ask/nolearn/<string:text>/<string:chatid>')
 class AudioAskNoLearnClass(Resource):
   def get (self, text: str, chatid: str):
@@ -244,7 +243,7 @@ class AudioAskNoLearnClass(Resource):
     except Exception as e:
       return make_response(str(e), 500)
 
-@limiter.limit("4/minute")
+
 @nsaudio.route('/ask/nolearn/random/<string:text>/<string:chatid>')
 class AudioAskNoLearnRandomClass(Resource):
   def get (self, text: str, chatid: str):
@@ -258,7 +257,7 @@ class AudioAskNoLearnRandomClass(Resource):
     except Exception as e:
       return make_response(str(e), 500)
 
-@limiter.limit("4/minute")
+
 @nsaudio.route('/ask/user/<string:user>/<string:text>/<string:chatid>')
 class AudioAskUserClass(Resource):
   def get (self, user: str, text: str, chatid: str):
@@ -292,7 +291,7 @@ class AudioAskUserClass(Resource):
 #      thread_wait.start()
 #      return send_file(utils.get_tts(get_chatbot_by_id(chatid).get_response(text).text), attachment_filename='audio.wav', mimetype='audio/x-wav')
 
-@limiter.limit("4/minute")
+
 @nsaudio.route('/search/<string:text>/<string:chatid>')
 class AudioSearchClass(Resource):
   @cache.cached(timeout=10, query_string=True)
@@ -307,7 +306,7 @@ class AudioSearchClass(Resource):
     except Exception as e:
       return make_response(str(e), 500)
 
-@limiter.limit("4/minute")
+
 @nsaudio.route('/insult')
 class AudioInsultClass(Resource):
   @api.expect(parserinsult)
@@ -315,12 +314,12 @@ class AudioInsultClass(Resource):
     sentence = insults.get_insults()
     #get_chatbot_by_id(chatid).get_response(sentence)
     chatid = request.args.get("chatid")
-    #threading.Timer(0, get_chatbot_by_id(chatid).get_response, args=[sentence]).start()
+    threading.Timer(0, get_chatbot_by_id(chatid).get_response, args=[sentence]).start()
     text = request.args.get("text")
     try:
       if text and text != '' and text != 'none':
         sentence = text + " " + sentence
-        tts_out = utils.get_tts(sentence, voice="null")
+        tts_out = utils.get_tts(sentence, voice="google")
       if tts_out is not None:
         return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
       else:
@@ -335,7 +334,7 @@ nsmusic = api.namespace('chatbot_music', 'Accumulators Chatbot Music APIs')
 parserurl = reqparse.RequestParser()
 parserurl.add_argument("url", type=str)
 
-@limiter.limit("4/minute")
+
 @nsmusic.route('/youtube/get')
 class YoutubeGetClass(Resource):
   @api.expect(parserurl)
@@ -344,7 +343,7 @@ class YoutubeGetClass(Resource):
     audio = utils.get_youtube_audio(url)
     return send_file(audio, attachment_filename='audio.mp3', mimetype='audio/mp3')
 
-@limiter.limit("4/minute")
+
 @nsmusic.route('/youtube/info')
 class YoutubeInfoClass(Resource):
   @api.expect(parserurl)
@@ -356,7 +355,7 @@ parsersearch = reqparse.RequestParser()
 parsersearch.add_argument("text", type=str)
 parsersearch.add_argument("onevideo", type=str)
 
-@limiter.limit("4/minute")
+
 @nsmusic.route('/youtube/search')
 class YoutubeSearchClass(Resource):
   @api.expect(parsersearch)
@@ -367,14 +366,14 @@ class YoutubeSearchClass(Resource):
 
 nsjokestext = api.namespace('jokes_text', 'Accumulators Jokes APIs')
 
-@limiter.limit("4/minute")
+
 @nsjokestext.route('/chuck')
 class TextChuckClass(Resource):
   @cache.cached(timeout=2)
   def get(self):
     return get_response_str(utils.get_joke("CHUCK_NORRIS"))
 
-@limiter.limit("4/minute")
+
 @nsjokestext.route('/random')
 class TextRandomJokeClass(Resource):
   def get(self):
@@ -382,7 +381,7 @@ class TextRandomJokeClass(Resource):
 
 nsjokesaudio = api.namespace('jokes_audio', 'Accumulators Jokes Audio APIs')
 
-@limiter.limit("4/minute")
+
 @nsjokesaudio.route('/chuck')
 class AudioChuckClass(Resource):
   def get(self):
@@ -397,7 +396,7 @@ class AudioChuckClass(Resource):
     except Exception as e:
       return make_response(str(e), 500)
 
-@limiter.limit("4/minute")
+
 @nsjokesaudio.route('/random')
 class AudioRandomJokeClass(Resource):
   def get(self):
@@ -415,7 +414,7 @@ class AudioRandomJokeClass(Resource):
 
 nswebtext = api.namespace('reddit', 'Accumulators Reddit APIs')
 
-@limiter.limit("4/minute")
+
 @nswebtext.route('/search/<string:word>')
 class TextRedditSearchClass(Resource):
   def get(self, word: str):
@@ -425,7 +424,7 @@ class TextRedditSearchClass(Resource):
 
 nsimages = api.namespace('images', 'Accumulators Images APIs')
 
-@limiter.limit("4/minute")
+
 @nsimages.route('/search/<string:words>')
 class AudioSearchClass(Resource):
   def get (self, words: str):
@@ -464,39 +463,39 @@ class AudioSearchClass(Resource):
 
 nsutils = api.namespace('utils', 'AccumulatorsUtils APIs')
 
-@limiter.limit("4/minute")
+
 @nsutils.route('/sentence/populate/<int:count>/<string:chatid>')
 class UtilsPopulateSentences(Resource):
   def get (self, count: int, chatid: str):
     threading.Timer(0, utils.populate_new_sentences, args=[get_chatbot_by_id(chatid), count, None, False, chatid]).start()
     return "Starting thread populate_new_sentences with parameters: " + str(count) + ", None. Watch the logs."
 
-@limiter.limit("4/minute")
+
 @nsutils.route('/sentence/populate/parsed/<int:count>/<string:word>/<string:chatid>')
 class UtilsPopulateSentencesParsed(Resource):
   def get (self, count: int, word: str, chatid: str):
     threading.Timer(0, utils.populate_new_sentences, args=[get_chatbot_by_id(chatid), count, word, False, chatid]).start()
     return "Starting thread populate_new_sentences with parameters: " + str(count) + ", " + word + ". Watch the logs."
 
-@limiter.limit("4/minute")
+
 @nsutils.route('/sentence/populate/parsed/api/<string:word>/<string:chatid>')
 class UtilsPopulateSentencesParsedApi(Resource):
   def get (self, word: str, chatid: str):
     return get_response_str(utils.populate_new_sentences(get_chatbot_by_id(chatid), 5, word, True, chatid))
 
-@limiter.limit("4/minute")
+
 @nsutils.route('/sentence/populate/api/<string:chatid>')
 class UtilsPopulateSentencesApi(Resource):
   def get (self, chatid: str):
     return get_response_str(utils.populate_new_sentences(get_chatbot_by_id(chatid), 5, None, True, chatid))
 
-@limiter.limit("4/minute")
+
 @nsutils.route('/delete/bytext/<string:text>/<string:chatid>')
 class UtilsDeleteByText(Resource):
   def get (self, text: str, chatid: str):
     return get_response_str(utils.delete_by_text('./config/' + get_chatbot_by_id(chatid).storage.database_uri[17:], text))
 	
-@limiter.limit("4/minute")
+
 @nsutils.route('/upload/trainfile/json')
 class UtilsTrainFile(Resource):
   def post (self):    
@@ -510,7 +509,7 @@ class UtilsTrainFile(Resource):
       print(exc_type, fname, exc_tb.tb_lineno)
       return utils.empty_template_trainfile_json()
 	
-@limiter.limit("4/minute")
+
 @nsutils.route('/upload/trainfile/txt')
 class UtilsTrainFile(Resource):
   def post (self):
@@ -530,18 +529,18 @@ class UtilsTrainFile(Resource):
       print(exc_type, fname, exc_tb.tb_lineno)
       return get_response_str("Error! Please upload a trainfile.txt")
 
-@limiter.limit("4/minute")
+
 @nsutils.route('/fakeyou/get_voices_by_cat/<string:category>')
 class FakeYouGetVoicesByCatClass(Resource):
   def get(self, category: str):
     return jsonify(utils.get_fakeyou_voices(category))
 
-@limiter.limit("4/minute")
+
 @app.route('/upload')
 def upload_file():
    return render_template('upload.html')
 
-@limiter.limit("4/minute")
+
 def get_chatbot_by_id(chatid: str):
   if chatid not in chatbots_dict:
     chatbots_dict[chatid] = utils.get_chatterbot(chatid, os.environ['TRAIN'] == "True")
@@ -566,6 +565,7 @@ if not app.debug or os.environ.get("WERKZEUG_RUN_MAIN") == "true":
   #twitter.create_empty_tables()
   tournament.create_empty_tables()
   cache.init_app(app)
+  limiter.init_app(app)
   scheduler.init_app(app)
   scheduler.start()
   
