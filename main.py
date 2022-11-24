@@ -151,12 +151,15 @@ nsaudio = api.namespace('chatbot_audio', 'Accumulators Chatbot TTS audio APIs')
 class AudioRepeatClass(Resource):
   @cache.cached(timeout=7200, query_string=True)
   def get (self, text: str, chatid: str, voice: str):
-    tts_out = utils.get_tts(text, voice=voice)
-    if tts_out is not None:
-      return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
-    else:
-      resp = make_response("TTS Generation Error!", 500)
-      return resp
+    try:
+      tts_out = utils.get_tts(text, voice=voice)
+      if tts_out is not None:
+        return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
+      else:
+        resp = make_response("TTS Generation Error!", 500)
+        return resp
+    except Exception as e:
+      return make_response(str(e), 500)
 
 @nsaudio.route('/repeat/learn/<string:text>/<string:chatid>/<string:voice>')
 class AudioRepeatLearnClass(Resource):
@@ -164,12 +167,15 @@ class AudioRepeatLearnClass(Resource):
   def get (self, text: str, chatid: str, voice: str):
     #get_chatbot_by_id(chatid).get_response(text)
     threading.Timer(0, get_chatbot_by_id(chatid).get_response, args=[text]).start()
-    tts_out = utils.get_tts(text, voice=voice)
-    if tts_out is not None:
-      return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
-    else:
-      resp = make_response("TTS Generation Error!", 500)
-      return resp
+    try:
+      tts_out = utils.get_tts(text, voice=voice)
+      if tts_out is not None:
+        return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
+      else:
+        resp = make_response("TTS Generation Error!", 500)
+        return resp
+    except Exception as e:
+      return make_response(str(e), 500)
 
 @nsaudio.route('/repeat/learn/user/<string:user>/<string:text>/<string:chatid>/<string:voice>')
 class AudioRepeatLearnUserClass(Resource):
@@ -178,33 +184,54 @@ class AudioRepeatLearnUserClass(Resource):
     if user in previousMessages:
       utils.learn(previousMessages[user], text, get_chatbot_by_id(chatid))
     previousMessages[user] = text
-
-    tts_out = utils.get_tts(text, voice=voice)
-    if tts_out is not None:
-     return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
-    else:
-      resp = make_response("TTS Generation Error!", 500)
-      return resp
+    try:
+      tts_out = utils.get_tts(text, voice=voice)
+      if tts_out is not None:
+        return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
+      else:
+        resp = make_response("TTS Generation Error!", 500)
+        return resp
+    except Exception as e:
+      return make_response(str(e), 500)
 
 @nsaudio.route('/ask/<string:text>/<string:chatid>')
 class AudioAskClass(Resource):
   def get (self, text: str, chatid: str):
-    tts_out = utils.get_tts(get_chatbot_by_id(chatid).get_response(text).text)
-    if tts_out is not None:
-      return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
-    else:
-      resp = make_response("TTS Generation Error!", 500)
-      return resp
+    try:
+      tts_out = utils.get_tts(get_chatbot_by_id(chatid).get_response(text).text)
+      if tts_out is not None:
+        return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
+      else:
+        resp = make_response("TTS Generation Error!", 500)
+        return resp
+    except Exception as e:
+      return make_response(str(e), 500)
 
 @nsaudio.route('/ask/nolearn/<string:text>/<string:chatid>')
-class AudioAskNoLeaRNClass(Resource):
+class AudioAskNoLearnClass(Resource):
   def get (self, text: str, chatid: str):
-    tts_out = utils.get_tts(get_chatbot_by_id(chatid).get_response(text, learn=False).text)
-    if tts_out is not None:
-      return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
-    else:
-      resp = make_response("TTS Generation Error!", 500)
-      return resp
+    try:
+      tts_out = utils.get_tts(get_chatbot_by_id(chatid).get_response(text, learn=False).text)
+      if tts_out is not None:
+        return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
+      else:
+        resp = make_response("TTS Generation Error!", 500)
+        return resp
+    except Exception as e:
+      return make_response(str(e), 500)
+
+@nsaudio.route('/ask/nolearn/random/<string:text>/<string:chatid>')
+class AudioAskNoLearnRandomClass(Resource):
+  def get (self, text: str, chatid: str):
+    try:
+      tts_out = utils.get_tts(get_chatbot_by_id(chatid).get_response(text, learn=False).text, voice="random")
+      if tts_out is not None:
+        return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
+      else:
+        resp = make_response("TTS Generation Error!", 500)
+        return resp
+    except Exception as e:
+      return make_response(str(e), 500)
 
 @nsaudio.route('/ask/user/<string:user>/<string:text>/<string:chatid>')
 class AudioAskUserClass(Resource):
@@ -216,13 +243,15 @@ class AudioAskUserClass(Resource):
     if user in previousMessages:
       utils.learn(previousMessages[user], text, get_chatbot_by_id(chatid))
     previousMessages[user] = chatbot_response
-
-    tts_out = utils.get_tts(chatbot_response)
-    if tts_out is not None:
-      return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
-    else:
-      resp = make_response("TTS Generation Error!", 500)
-      return resp
+    try:
+      tts_out = utils.get_tts(chatbot_response)
+      if tts_out is not None:
+        return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
+      else:
+        resp = make_response("TTS Generation Error!", 500)
+        return resp
+    except Exception as e:
+      return make_response(str(e), 500)
 
 #def thread_wait(i):
 #    time.sleep(i)
@@ -241,12 +270,15 @@ class AudioAskUserClass(Resource):
 class AudioSearchClass(Resource):
   @cache.cached(timeout=10, query_string=True)
   def get (self, text: str, chatid: str):
-    tts_out = utils.get_tts(utils.wiki_summary(text, voice="null"))
-    if tts_out is not None:
-      return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
-    else:
-      resp = make_response("TTS Generation Error!", 500)
-      return resp
+    try:
+      tts_out = utils.get_tts(utils.wiki_summary(text, voice="null"))
+      if tts_out is not None:
+        return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
+      else:
+        resp = make_response("TTS Generation Error!", 500)
+        return resp
+    except Exception as e:
+      return make_response(str(e), 500)
 
 @nsaudio.route('/insult')
 class AudioInsultClass(Resource):
@@ -257,14 +289,17 @@ class AudioInsultClass(Resource):
     chatid = request.args.get("chatid")
     #threading.Timer(0, get_chatbot_by_id(chatid).get_response, args=[sentence]).start()
     text = request.args.get("text")
-    if text and text != '' and text != 'none':
-      sentence = text + " " + sentence
-      tts_out = utils.get_tts(sentence, voice="null")
-    if tts_out is not None:
-     return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
-    else:
-      resp = make_response("TTS Generation Error!", 500)
-      return resp
+    try:
+      if text and text != '' and text != 'none':
+        sentence = text + " " + sentence
+        tts_out = utils.get_tts(sentence, voice="null")
+      if tts_out is not None:
+        return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
+      else:
+        resp = make_response("TTS Generation Error!", 500)
+        return resp
+    except Exception as e:
+      return make_response(str(e), 500)
 
 
 nsmusic = api.namespace('chatbot_music', 'Accumulators Chatbot Music APIs')
@@ -325,9 +360,8 @@ class AudioChuckClass(Resource):
       else:
         resp = make_response("TTS Generation Error!", 500)
         return resp
-    except:
-      resp = make_response("TTS Generation Error!", 500)
-      return resp
+    except Exception as e:
+      return make_response(str(e), 500)
 
 @nsjokesaudio.route('/random')
 class AudioRandomJokeClass(Resource):
@@ -340,9 +374,8 @@ class AudioRandomJokeClass(Resource):
       else:
         resp = make_response("TTS Generation Error!", 500)
         return resp
-    except:
-      resp = make_response("TTS Generation Error!", 500)
-      return resp
+    except Exception as e:
+      return make_response(str(e), 500)
 
 
 nswebtext = api.namespace('reddit', 'Accumulators Reddit APIs')

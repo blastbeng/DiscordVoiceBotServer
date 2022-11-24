@@ -7,11 +7,11 @@ server {
     location / {
         include uwsgi_params;
         uwsgi_ignore_client_abort on;
-        proxy_read_timeout 120;
-        uwsgi_connect_timeout 120;
-        uwsgi_read_timeout 120;
-        uwsgi_send_timeout 120;
-        uwsgi_request_buffering off;
+        proxy_read_timeout 30;
+        uwsgi_connect_timeout 30;
+        uwsgi_read_timeout 30;
+        uwsgi_send_timeout 30;
+        uwsgi_request_buffering on;
         uwsgi_pass loadbalancer;
     }
 }

@@ -16,6 +16,7 @@ import fakeyou
 import time
 import wave
 import audioop
+import logging
 from uuid import uuid4
 from chatterbot import ChatBot
 from chatterbot.conversation import Statement
@@ -37,6 +38,7 @@ from pathlib import Path
 from os.path import join, dirname
 from dotenv import load_dotenv
 from fakeyou.objects import *
+from fakeyou.exception import *
 from sqlitedict import SqliteDict
 
 dotenv_path = join(dirname(__file__), '.env')
@@ -48,14 +50,10 @@ MYMEMORY_TRANSLATOR_EMAIL = os.environ.get("MYMEMORY_TRANSLATOR_EMAIL")
 FAKEYOU_USER = os.environ.get("FAKEYOU_USER")
 FAKEYOU_PASS = os.environ.get("FAKEYOU_PASS")
 
+log = logging.getLogger('werkzeug')
+
 fy=fakeyou.FakeYou()
 fy.login(FAKEYOU_USER,FAKEYOU_PASS)
-
-try:
-  if os.path.exists(TMP_DIR+"/fakeyou_voices.sqlite"):
-    os.remove(TMP_DIR+"/fakeyou_voices.sqlite")
-except:
-  print("Error removing fakeyou_voices.sqlite")
 
 fake = Faker()
 
@@ -109,7 +107,7 @@ def generate(filename: str):
           yield data
           data = fmp3.read(1024)
 
-def get_tts_google(text: str):    
+def get_tts_google(text: str):
   tts = gTTS(text=text, lang="it", slow=False)
   fp = BytesIO()
   tts.write_to_fp(fp)
@@ -565,7 +563,7 @@ def delete_by_text(dbpath: str, text: str):
 
 def get_tts(text: str, voice=None):
   try:
-    if voice is None or voice == "null":
+    if voice is None or voice == "null" or voice == "random":
       voice_to_use = get_random_voice()
     else:
       voice_to_use = voice
@@ -575,18 +573,24 @@ def get_tts(text: str, voice=None):
         out = get_wav_fy(fy,ijt)
         if out is not None:
           return out
+        elif voice == "random" or voice == "google":
+          return get_tts_google(text.strip())
         else:
-          #return get_tts_google(text.strip())
           return None
+      elif voice == "random" or voice == "google":
+        return get_tts_google(text.strip())
       else:
-        #return get_tts_google(text.strip())
         return None
     else:
       return get_tts_google(text.strip())
-  except:
-    #fy.login(FAKEYOU_USER,FAKEYOU_PASS)
-    #return get_tts_google(text.strip())
-    return None
+  except Exception as e:
+    exc_type, exc_obj, exc_tb = sys.exc_info()
+    fname = os.path.split(exc_tb.tb_frame.f_code.co_filename)[1]
+    print(exc_type, fname, exc_tb.tb_lineno)
+    if voice == "random":
+      return get_tts_google(text.strip())
+    else:
+      raise Exception(e)
 
 def get_random_voice():
   localvoices = get_fakeyou_voices("Italiano")
@@ -602,15 +606,26 @@ def get_fakeyou_voices(category: str):
       localvoices[key] = item
     return localvoices
   else:
-    result=fy.search(category)
-    for name,token in zip(result.categories.name,result.categories.categoryToken):
-      result_voices = fy.get_voices_by_category(token)
-      for title,token in zip(result_voices.title,result_voices.modelTokens):
-        localvoices[title] = token
-        db[title] = token
-        db.commit()
+    localvoices["Annunciatore Pokemon Stadium"] = "TM:4j7nw0gv2mhy"
+    localvoices["Caparezza"] = "TM:nk1h2vqxhzdc"
+    localvoices["Gerry Scotti"] = "TM:5ggf3m5w2mhq"
+    localvoices["Goku"] = "TM:eb0rmkq6fxtj"
+    localvoices["google"] = "google"
+    localvoices["Mario  Giordano"] = "TM:xd8srfb4v5w6"
+    localvoices["Papa Francesco"] = "TM:8bqjb9x51vz3"   
+    localvoices["Silvio Berlusconi"] = "TM:22e5sxvt2dvk"
+    db["Annunciatore Pokemon Stadium"] = "TM:4j7nw0gv2mhy"
+    db["Caparezza"] = "TM:nk1h2vqxhzdc"
+    db["Gerry Scotti"] = "TM:5ggf3m5w2mhq"
+    db["Goku"] = "TM:eb0rmkq6fxtj"
+    db["google"] = "google"
+    db["Mario  Giordano"] = "TM:xd8srfb4v5w6"
+    db["Papa Francesco"] = "TM:8bqjb9x51vz3"   
+    db["Silvio Berlusconi"] = "TM:22e5sxvt2dvk"
+    db.commit()
     return localvoices
   db.close()
+
 
 def generate_ijt(fy,text:str,ttsModelToken:str):
   if fy.v:
@@ -621,12 +636,13 @@ def generate_ijt(fy,text:str,ttsModelToken:str):
     ijt=handler.json()["inference_job_token"]
     return ijt
   elif handler.status_code==400:
-    return None
+    raise RequestError("FakeYou: voice or text error.")
   elif handler.status_code==429:
-    return None
+    raise TooManyRequests("FakeYou: too many requests.")
 
 
 def get_wav_fy(fy,ijt:str):
+  count = 0
   while True:
     handler=fy.session.get(url=fy.baseurl+f"tts/job/{ijt}")
     if handler.status_code==200:
@@ -634,20 +650,23 @@ def get_wav_fy(fy,ijt:str):
       wavo=wav(hjson)
       if fy.v:
         print("WAV STATUS :",wavo.status)
-      if wavo.status=="started":
+      if wavo.status=="started" and count <=30:
         continue
-      elif "pending" in wavo.status:
+      elif "pending" in wavo.status and count <=30:
         time.sleep(2)
+        count = count + 2
         continue
-      elif "attempt_failed" in wavo.status:
-        return None
-      elif "complete_success":
+      elif "attempt_failed" in wavo.status and count <=2:
+        raise TtsAttemptFailed("FakeYou: TTS generation failed.")
+      elif "complete_success" in wavo.status and count <=30:
         content=fy.session.get("https://storage.googleapis.com/vocodes-public"+wavo.maybePublicWavPath).content
         fp = BytesIO(content)
         fp.seek(0)
         return fp
+      elif count > 30:
+        raise RequestError("FakeYou: generation is taking longer than 30 seconds, forcing timeout.")
     elif handler.status_code==429:
-      return None
+      raise TooManyRequests("FakeYou: too many requests.")
 
 def login_fakeyou():
   fy.login(FAKEYOU_USER,FAKEYOU_PASS)
