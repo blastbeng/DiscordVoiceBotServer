@@ -28,3 +28,4 @@ pyenchant
 markovipy
 fakeyou
 sqlitedict
+Flask-Limiter
