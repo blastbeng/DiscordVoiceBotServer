@@ -24,7 +24,9 @@ RUN apt-get update && \
         python3-venv \
         python3-dev \
         procps \
-        python3-enchant
+        python3-enchant \
+        libpcre3-dev \
+        libpcre3
         
 RUN echo 'vm.overcommit_memory=1' >> /etc/sysctl.conf
 
@@ -62,7 +64,7 @@ COPY tournament.py .
 COPY image.py .
 COPY main.py .
 COPY config.py .
-COPY uwsgi.ini .
+#COPY uwsgi.ini .
 COPY entrypoint.sh .
 RUN chmod +x entrypoint.sh
 #RUN chown -R uwsgi:uwsgi /app
