@@ -69,7 +69,6 @@ def get_response_json(text: str):
     r.headers["Content-Type"] = "application/json; charset=utf-8"
     return r
 
-@limiter.limit("1/second")
 @nstext.route('/repeat/<string:text>/<string:chatid>')
 class TextRepeatClass(Resource):
   @cache.cached(timeout=30, query_string=True)
@@ -535,10 +534,17 @@ class FakeYouGetVoicesByCatClass(Resource):
   def get(self, category: str):
     return jsonify(utils.get_fakeyou_voices(category))
 
+@limiter.limit("1/second")
+@nsutils.route('/healthcheck')
+class TextRepeatClass(Resource):
+  def get (self):
+    return "Ok!"
 
 @app.route('/upload')
 def upload_file():
    return render_template('upload.html')
+
+
 
 
 def get_chatbot_by_id(chatid: str):
