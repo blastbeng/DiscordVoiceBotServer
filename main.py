@@ -11,7 +11,7 @@ import random
 import sys
 from flask_limiter import Limiter
 from flask_limiter.util import get_remote_address
-from flask import Flask, request, send_file, Response, jsonify, render_template, make_response
+from flask import Flask, request, send_file, Response, jsonify, render_template, make_response, after_this_request
 from flask_restx import Api, Resource, reqparse
 from flask_apscheduler import APScheduler
 from chatterbot.conversation import Statement
@@ -45,7 +45,7 @@ scheduler = APScheduler()
 
 limiter = Limiter(
     key_func=get_remote_address,
-    default_limits=["4/minute"],
+    default_limits=["20/minute"],
     storage_uri="memory://",
 )
 
@@ -71,14 +71,14 @@ def get_response_json(text: str):
 
 @nstext.route('/repeat/<string:text>/<string:chatid>')
 class TextRepeatClass(Resource):
-  @cache.cached(timeout=30, query_string=True)
+  @cache.cached(timeout=120, query_string=True)
   def get (self, text: str, chatid: str):
     return text
 
 
 @nstext.route('/repeat/learn/<string:text>/<string:chatid>')
 class TextRepeatLearnClass(Resource):
-  @cache.cached(timeout=30, query_string=True)
+  @cache.cached(timeout=120, query_string=True)
   def get (self, text: str, chatid: str):
     #get_chatbot_by_id(chatid).get_response(text)
     threading.Timer(0, get_chatbot_by_id(chatid).get_response, args=[text]).start()
@@ -87,12 +87,12 @@ class TextRepeatLearnClass(Resource):
 
 @nstext.route('/repeat/learn/user/<string:user>/<string:text>/<string:chatid>')
 class AudioRepeatLearnUserClass(Resource):
-  @cache.cached(timeout=30, query_string=True)
+  @cache.cached(timeout=120, query_string=True)
   def get (self, user: str, text: str, chatid: str):
     if user in previousMessages:
       utils.learn(previousMessages[user], text, get_chatbot_by_id(chatid))
     previousMessages[user] = text
-    return send_file(utils.get_tts(text), attachment_filename='audio.wav', mimetype='audio/x-wav')
+    return get_response_str(text)
 
 
 @nstext.route('/ask/<string:text>/<string:chatid>')
@@ -122,7 +122,7 @@ class TextAskUserClass(Resource):
 
 @nstext.route('/search/<string:text>/<string:chatid>')
 class TextSearchClass(Resource):
-  @cache.cached(timeout=30, query_string=True)
+  @cache.cached(timeout=120, query_string=True)
   def get (self, text: str, chatid: str):
     return get_response_str(utils.wiki_summary(text))
 
@@ -167,94 +167,126 @@ nsaudio = api.namespace('chatbot_audio', 'Accumulators Chatbot TTS audio APIs')
 
 @nsaudio.route('/repeat/<string:text>/<string:chatid>/<string:voice>')
 class AudioRepeatClass(Resource):
-  @cache.cached(timeout=30, query_string=True)
+  @cache.cached(timeout=120, query_string=True)
   def get (self, text: str, chatid: str, voice: str):
     try:
-      tts_out = utils.get_tts(text, voice=voice)
+      tts_out = utils.get_tts(text, voice=voice, timeout=120)
       if tts_out is not None:
         return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
       else:
-        resp = make_response("TTS Generation Error!", 500)
-        return resp
+        @after_this_request
+        def clear_cache(response):
+          cache.delete_memoized(AudioRepeatClass.get, self, str, str, str)
+          return make_response("TTS Generation Error!", 500)
     except Exception as e:
-      return make_response(str(e), 500)
+      @after_this_request
+      def clear_cache(response):
+        cache.delete_memoized(AudioRepeatClass.get, self, str, str, str)
+        return make_response(str(e), 500)
+      
 
 
 @nsaudio.route('/repeat/learn/<string:text>/<string:chatid>/<string:voice>')
 class AudioRepeatLearnClass(Resource):
-  @cache.cached(timeout=30, query_string=True)
+  @cache.cached(timeout=120, query_string=True)
   def get (self, text: str, chatid: str, voice: str):
     #get_chatbot_by_id(chatid).get_response(text)
     threading.Timer(0, get_chatbot_by_id(chatid).get_response, args=[text]).start()
     try:
-      tts_out = utils.get_tts(text, voice=voice)
+      tts_out = utils.get_tts(text, voice=voice, timeout=120)
       if tts_out is not None:
         return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
       else:
-        resp = make_response("TTS Generation Error!", 500)
-        return resp
+        @after_this_request
+        def clear_cache(response):
+          cache.delete_memoized(AudioRepeatLearnClass.get, self, str, str, str)
+          return make_response("TTS Generation Error!", 500)
     except Exception as e:
-      return make_response(str(e), 500)
+      @after_this_request
+      def clear_cache(response):
+        cache.delete_memoized(AudioRepeatLearnClass.get, self, str, str, str)
+        return make_response(str(e), 500)
 
 
 @nsaudio.route('/repeat/learn/user/<string:user>/<string:text>/<string:chatid>/<string:voice>')
 class AudioRepeatLearnUserClass(Resource):
-  @cache.cached(timeout=30, query_string=True)
+  @cache.cached(timeout=120, query_string=True)
   def get (self, user: str, text: str, chatid: str, voice: str):
     if user in previousMessages:
       utils.learn(previousMessages[user], text, get_chatbot_by_id(chatid))
     previousMessages[user] = text
     try:
-      tts_out = utils.get_tts(text, voice=voice)
+      tts_out = utils.get_tts(text, voice=voice, timeout=120)
       if tts_out is not None:
         return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
       else:
-        resp = make_response("TTS Generation Error!", 500)
-        return resp
+        @after_this_request
+        def clear_cache(response):
+          cache.delete_memoized(AudioRepeatLearnUserClass.get, self, str, str, str)
+          return make_response("TTS Generation Error!", 500)
     except Exception as e:
-      return make_response(str(e), 500)
+      @after_this_request
+      def clear_cache(response):
+        cache.delete_memoized(AudioRepeatLearnUserClass.get, self, str, str, str)
+        return make_response(str(e), 500)
 
 
 @nsaudio.route('/ask/<string:text>/<string:chatid>')
 class AudioAskClass(Resource):
   def get (self, text: str, chatid: str):
     try:
-      tts_out = utils.get_tts(get_chatbot_by_id(chatid).get_response(text).text)
+      tts_out = utils.get_tts(get_chatbot_by_id(chatid).get_response(text).text, timeout=120)
       if tts_out is not None:
         return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
       else:
-        resp = make_response("TTS Generation Error!", 500)
-        return resp
+        @after_this_request
+        def clear_cache(response):
+          cache.delete_memoized(AudioAskClass.get, self, str, str, str)
+          return make_response("TTS Generation Error!", 500)
     except Exception as e:
-      return make_response(str(e), 500)
+      @after_this_request
+      def clear_cache(response):
+        cache.delete_memoized(AudioAskClass.get, self, str, str, str)
+        return make_response(str(e), 500)
 
 
 @nsaudio.route('/ask/nolearn/<string:text>/<string:chatid>')
 class AudioAskNoLearnClass(Resource):
   def get (self, text: str, chatid: str):
     try:
-      tts_out = utils.get_tts(get_chatbot_by_id(chatid).get_response(text, learn=False).text)
+      tts_out = utils.get_tts(get_chatbot_by_id(chatid).get_response(text, learn=False).text, timeout=120)
       if tts_out is not None:
         return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
       else:
-        resp = make_response("TTS Generation Error!", 500)
-        return resp
+        @after_this_request
+        def clear_cache(response):
+          cache.delete_memoized(AudioAskNoLearnClass.get, self, str, str, str)
+          return make_response("TTS Generation Error!", 500)
     except Exception as e:
-      return make_response(str(e), 500)
+      @after_this_request
+      def clear_cache(response):
+        cache.delete_memoized(AudioAskNoLearnClass.get, self, str, str, str)
+        return make_response(str(e), 500)
 
 
 @nsaudio.route('/ask/nolearn/random/<string:text>/<string:chatid>')
 class AudioAskNoLearnRandomClass(Resource):
   def get (self, text: str, chatid: str):
     try:
-      tts_out = utils.get_tts(get_chatbot_by_id(chatid).get_response(text, learn=False).text, voice="random")
+      text = get_chatbot_by_id(chatid).get_response(text, learn=False).text
+      tts_out = utils.get_tts(text, voice="random", timeout=120)
       if tts_out is not None:
         return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
       else:
-        resp = make_response("TTS Generation Error!", 500)
-        return resp
+        @after_this_request
+        def clear_cache(response):
+          cache.delete_memoized(AudioAskNoLearnRandomClass.get, self, str, str, str)
+          return make_response("TTS Generation Error!", 500)
     except Exception as e:
-      return make_response(str(e), 500)
+      @after_this_request
+      def clear_cache(response):
+        cache.delete_memoized(AudioAskNoLearnRandomClass.get, self, str, str, str)
+        return make_response(str(e), 500)
 
 
 @nsaudio.route('/ask/user/<string:user>/<string:text>/<string:chatid>')
@@ -268,14 +300,19 @@ class AudioAskUserClass(Resource):
       utils.learn(previousMessages[user], text, get_chatbot_by_id(chatid))
     previousMessages[user] = chatbot_response
     try:
-      tts_out = utils.get_tts(chatbot_response)
+      tts_out = utils.get_tts(chatbot_response, timeout=120)
       if tts_out is not None:
         return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
       else:
-        resp = make_response("TTS Generation Error!", 500)
-        return resp
+        @after_this_request
+        def clear_cache(response):
+          cache.delete_memoized(AudioAskUserClass.get, self, str, str, str)
+          return make_response("TTS Generation Error!", 500)
     except Exception as e:
-      return make_response(str(e), 500)
+      @after_this_request
+      def clear_cache(response):
+        cache.delete_memoized(AudioAskUserClass.get, self, str, str, str)
+        return make_response(str(e), 500)
 
 #def thread_wait(i):
 #    time.sleep(i)
@@ -296,14 +333,19 @@ class AudioSearchClass(Resource):
   @cache.cached(timeout=10, query_string=True)
   def get (self, text: str, chatid: str):
     try:
-      tts_out = utils.get_tts(utils.wiki_summary(text, voice="null"))
+      tts_out = utils.get_tts(utils.wiki_summary(text), voice="null", timeout=120)
       if tts_out is not None:
         return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
       else:
-        resp = make_response("TTS Generation Error!", 500)
-        return resp
+        @after_this_request
+        def clear_cache(response):
+          cache.delete_memoized(AudioSearchClass.get, self, str, str, str)
+          return make_response("TTS Generation Error!", 500)
     except Exception as e:
-      return make_response(str(e), 500)
+      @after_this_request
+      def clear_cache(response):
+        cache.delete_memoized(AudioSearchClass.get, self, str, str, str)
+        return make_response(str(e), 500)
 
 
 @nsaudio.route('/insult')
@@ -318,7 +360,7 @@ class AudioInsultClass(Resource):
     try:
       if text and text != '' and text != 'none':
         sentence = text + " " + sentence
-        tts_out = utils.get_tts(sentence, voice="google")
+        tts_out = utils.get_tts(sentence, voice="google", timeout=120)
       if tts_out is not None:
         return send_file(tts_out, attachment_filename='audio.wav', mimetype='audio/x-wav')
       else:
@@ -386,7 +428,7 @@ class AudioChuckClass(Resource):
   def get(self):
     try:
       text = utils.get_joke("CHUCK_NORRIS")
-      tts_out = utils.get_tts(text, voice="null")
+      tts_out = utils.get_tts(text, voice="null", timeout=120)
       if tts_out is not None:
         return send_file(tts, attachment_filename='audio.wav', mimetype='audio/x-wav')
       else:
@@ -401,7 +443,7 @@ class AudioRandomJokeClass(Resource):
   def get(self):
     try:
       text = utils.get_joke("")
-      tts_out = utils.get_tts(text, voice="null")
+      tts_out = utils.get_tts(text, voice="null", timeout=120)
       if tts_out is not None:
         return send_file(tts, attachment_filename='audio.wav', mimetype='audio/x-wav')
       else:

@@ -561,7 +561,7 @@ def delete_by_text(dbpath: str, text: str):
     if sqliteConnection:
         sqliteConnection.close()
 
-def get_tts(text: str, voice=None):
+def get_tts(text: str, voice=None, timeout=30):
   try:
     if voice is None or voice == "null" or voice == "random":
       voice_to_use = get_random_voice()
@@ -570,7 +570,7 @@ def get_tts(text: str, voice=None):
     if voice_to_use != "google":
       ijt = generate_ijt(fy, text.strip(), voice_to_use)
       if ijt is not None:
-        out = get_wav_fy(fy,ijt)
+        out = get_wav_fy(fy,ijt, timeout=timeout)
         if out is not None:
           return out
         elif voice == "random" or voice == "google":
@@ -641,7 +641,7 @@ def generate_ijt(fy,text:str,ttsModelToken:str):
     raise TooManyRequests("FakeYou: too many requests.")
 
 
-def get_wav_fy(fy,ijt:str):
+def get_wav_fy(fy,ijt:str, timeout:int):
   count = 0
   while True:
     handler=fy.session.get(url=fy.baseurl+f"tts/job/{ijt}")
@@ -650,21 +650,21 @@ def get_wav_fy(fy,ijt:str):
       wavo=wav(hjson)
       if fy.v:
         print("WAV STATUS :",wavo.status)
-      if wavo.status=="started" and count <=30:
+      if wavo.status=="started" and count <= timeout:
         continue
-      elif "pending" in wavo.status and count <=30:
+      elif "pending" in wavo.status and count <= timeout:
         time.sleep(2)
         count = count + 2
         continue
       elif "attempt_failed" in wavo.status and count <=2:
         raise TtsAttemptFailed("FakeYou: TTS generation failed.")
-      elif "complete_success" in wavo.status and count <=30:
+      elif "complete_success" in wavo.status and count <= timeout:
         content=fy.session.get("https://storage.googleapis.com/vocodes-public"+wavo.maybePublicWavPath).content
         fp = BytesIO(content)
         fp.seek(0)
         return fp
-      elif count > 30:
-        raise RequestError("FakeYou: generation is taking longer than 30 seconds, forcing timeout.")
+      elif count > timeout:
+        raise RequestError("FakeYou: generation is taking longer than " + timeout + " seconds, forcing timeout.")
     elif handler.status_code==429:
       raise TooManyRequests("FakeYou: too many requests.")
 
