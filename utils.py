@@ -568,6 +568,12 @@ def get_tts(text: str, voice=None, timeout=30):
     else:
       voice_to_use = voice
     if voice_to_use != "google":
+      if bool(random.getrandbits(1)):
+        proxies = {'http': 'http://192.168.1.160:9058'}
+        fy.session.proxies.update(proxies)
+      else:
+        proxies = {}
+        fy.session.proxies.update(proxies)
       ijt = generate_ijt(fy, text.strip(), voice_to_use)
       if ijt is not None:
         out = get_wav_fy(fy,ijt, timeout=timeout)
@@ -657,8 +663,8 @@ def get_wav_fy(fy,ijt:str, timeout:int):
       if wavo.status=="started" and count <= timeout:
         continue
       elif "pending" in wavo.status and count <= timeout:
-        time.sleep(2)
         count = count + 2
+        time.sleep(2)
         continue
       elif "attempt_failed" in wavo.status and count <=2:
         raise TtsAttemptFailed("FakeYou: TTS generation failed.")
@@ -668,7 +674,7 @@ def get_wav_fy(fy,ijt:str, timeout:int):
         fp.seek(0)
         return fp
       elif count > timeout:
-        raise RequestError("FakeYou: generation is taking longer than " + timeout + " seconds, forcing timeout.")
+        raise RequestError("FakeYou: generation is taking longer than " + str(timeout) + " seconds, forcing timeout.")
     elif handler.status_code==429:
       raise TooManyRequests("FakeYou: too many requests.")
 
